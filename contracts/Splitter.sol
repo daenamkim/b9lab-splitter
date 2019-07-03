@@ -3,23 +3,24 @@ pragma experimental ABIEncoderV2;
 
 contract Splitter {
   struct User {
-    bytes8 name;
+    string name;
     address addr;
     uint balance;
   }
   User[] users;
   mapping(address => bool) accounts;
 
-  function addUser(bytes8 name, address addr) public {
-    require(!accounts[addr], 'A given address is already registerd');
+  function addUser(string memory name) public {
+    require(!accounts[msg.sender], 'A given address is already registerd');
     // TODO: limit the number of users?
 
     User memory newUser = User({
       name: name,
-      addr: addr,
+      addr: msg.sender,
       balance: 0
     });
     users.push(newUser);
+    accounts[msg.sender] = true;
   }
 
   function contributeEther() public payable {
