@@ -1,17 +1,27 @@
 pragma solidity >= 0.5.7;
+pragma experimental ABIEncoderV2;
 
 contract Splitter {
-  mapping(address => uint) balances;
-  address[] addresses;
-
-  constructor() {
-
+  struct User {
+    bytes8 name;
+    address addr;
+    uint balance;
   }
+  User[] users;
+  mapping(address => bool) accounts;
 
-  event setAddressHandle(address addr, uint balance);
+  event userAdded(User user);
 
-  function setAddress(address addr) public {
+  function addUser(bytes8 name, address addr) public {
+    require(!accounts[addr], 'A given address is already registerd');
 
+    User memory newUser = User({
+      name: name,
+      addr: addr,
+      balance: 0
+    });
+    users.push(newUser);
+    emit userAdded(newUser);
   }
 
   event sendEtherHandle();
@@ -20,7 +30,7 @@ contract Splitter {
 
   }
 
-  function getAllBalances() public view {
-
+  function getAllUsers() public view returns (User[] memory) {
+    return users;
   }
 }
