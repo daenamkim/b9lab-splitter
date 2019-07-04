@@ -9,6 +9,11 @@ contract Splitter {
   }
   User[] users;
   mapping(address => bool) accounts;
+  address owner;
+
+  constructor() public {
+    owner = msg.sender;
+  }
 
   function registerUser(string memory name) public {
     require(!accounts[msg.sender], 'A given address is already registered');
@@ -41,6 +46,16 @@ contract Splitter {
 
   function getAllUsers() public view returns (User[] memory) {
     return users;
+  }
+
+  function deleteAllUsers() public {
+    require(msg.sender == owner, 'Delete all users can be run by owner only');
+
+    for (uint i = 0; i < users.length; i++) {
+      accounts[users[i].addr] = false;
+    }
+
+    delete users;
   }
 
   function getBalance() public view returns (uint) {
