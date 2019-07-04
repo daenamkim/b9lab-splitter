@@ -6,13 +6,14 @@
   "author": "Daenam Kim",
   "license": "MIT",
   "scripts": {
-    "test": "yarn truffle test",
     "compile": "yarn truffle compile",
-    "deploy": "yarn truffle deploy",
-    "migrate": "yarn truffle migrate"
+    "deploy": "./run-ganache.sh && yarn truffle deploy && ./stop-ganache.sh",
+    "migrate": "./run-ganache.sh && yarn truffle migrate && ./stop-ganache.sh",
+    "test": "./run-ganache.sh && yarn truffle test && ./stop-ganache.sh"
   },
   "dependencies": {},
   "devDependencies": {
+    "ganache-cli": "^6.4.4",
     "truffle": "^5.0.26"
   }
 }

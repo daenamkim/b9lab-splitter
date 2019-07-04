@@ -1,18 +1,39 @@
-describe('Splitter Contract', () => {
-  it('register a user(address) successfully', () => {
+const Splitter = artifacts.require('Splitter.sol');
+
+contract('Splitter', async accounts => {
+  if (!accounts || accounts.length < 3) {
+    console.error('Insufficient number of accounts');
+    return;
+  }
+
+  const addresses = {
+    alice: accounts[0],
+    bob: accounts[1],
+    carol: accounts[2]
+  };
+
+  let splitterInstance;
+  beforeEach(async () => {
+    splitterInstance = await Splitter.deployed();
+    // TODO: remove
+    const test = (await splitterInstance.getBalance.call()).toNumber();
+    console.log('BALANCE!!!!!', test);
+  });
+
+  it('should register a user(address) successfully', async () => {
     // register a user
     // expect the number of users is 1
   });
-  it('cannot register the same user(address) again', () => {
+  it('should not register the same user(address) again', async () => {
     // register a user
     // register a user again
     // expect a required error
     // expect the number of users is 1
   });
-  it('cannot contribute ether if user(address) is not registered', () => {});
-  it('cannot contribute ether(to wei) smaller than 1 wei', () => {});
-  it('cannot contribute ether until at least 3 users join', () => {});
-  it('contribute split ether to others', () => {
+  it('should not contribute ether if user(address) is not registered', async () => {});
+  it('should not contribute ether(to wei) smaller than 1 wei', async () => {});
+  it('should not contribute ether until at least 3 users join', async () => {});
+  it('should contribute split ether to others', async () => {
     // register 3 users (Alice, Bob, Carol)
     // Alice send some ether to the contract
     // retrieve all users and contract's balance, expect Bob's and Carol's balance each in the contract is a half of Alice sent
