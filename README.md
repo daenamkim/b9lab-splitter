@@ -2,7 +2,7 @@
 
 # B9lab Splitter
 
-This is the first project of B9lab, BLOCKSTARS-ETH-2.
+This is the first project of B9lab, BLOCKSTARS-ETH-2. :tada:
 
 ### Basic
 
