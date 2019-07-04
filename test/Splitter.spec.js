@@ -41,7 +41,7 @@ contract('Splitter', accounts => {
   it('should register a user(address) successfully', async () => {
     await initUsers(splitterInstance);
     const actual = await splitterInstance.getAllUsers.call({
-      from: ownerAddr
+      from: users[0].addr
     });
 
     const expected = users.map(user => [user.name, user.addr, '0']);
@@ -58,7 +58,7 @@ contract('Splitter', accounts => {
       assert.equal(error.reason, 'A given address is already registered');
     }
   });
-  it.only('should not contribute ether if user(address) is not registered', async () => {
+  it('should not contribute ether if user(address) is not registered', async () => {
     try {
       await splitterInstance.contributeEther({
         value: 100,
@@ -69,10 +69,10 @@ contract('Splitter', accounts => {
       assert.equal(error.reason, 'A given address is not registered');
     }
   });
-  it.only('should not contribute ether(to wei) smaller than 1 wei', async () => {
+  it('should not contribute ether(to wei) smaller than 1 wei', async () => {
     await initUsers(splitterInstance);
     try {
-      const test = await splitterInstance.contributeEther({
+      await splitterInstance.contributeEther({
         value: 0,
         from: users[0].addr
       });
@@ -85,14 +85,37 @@ contract('Splitter', accounts => {
     }
   });
   it('should not contribute ether until at least 3 users join', async () => {
+    await initUsers(splitterInstance);
     try {
-    } catch (error) {}
+      await splitterInstance.deleteUser(users[1].addr, {
+        from: ownerAddr
+      });
+
+      await splitterInstance.contributeEther({
+        value: 100,
+        from: users[0].addr
+      });
+    } catch (error) {
+      assert.equal(
+        error.reason,
+        'Please wait until at least 3 users are registered'
+      );
+    }
   });
   it('should contribute split ether to others', async () => {
-    // register 3 users (Alice, Bob, Carol)
-    // Alice send some ether to the contract
-    // retrieve all users and contract's balance, expect Bob's and Carol's balance each in the contract is a half of Alice sent
+    await initUsers(splitterInstance);
+    await splitterInstance.contributeEther({
+      value: 100,
+      from: users[0].addr
+    });
+    const actual = await splitterInstance.getAllUsers.call({
+      from: users[0].addr
+    });
+    const expected = users.map((user, index) =>
+      index !== 0 ? [user.name, user.addr, '50'] : [user.name, user.addr, '0']
+    );
+    assert.deepEqual(actual, expected);
   });
-  // TODO: cannot withdraw ether if its own balance if insufficient
-  // TODO: each user can withdraw ether in the contract into its own address (pocket)
+  // TODO: cannot withdraw ether if its own balance if insufficient?
+  // TODO: each user can withdraw ether in the contract into its own address (pocket)?
 });
