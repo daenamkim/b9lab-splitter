@@ -25,14 +25,15 @@ contract('Splitter', async accounts => {
   let splitterInstance;
   beforeEach(async () => {
     splitterInstance = await Splitter.deployed();
+  });
+
+  it('should register a user(address) successfully', async () => {
     for (const user of users) {
       await splitterInstance.registerUser(user.name, {
         from: user.addr
       });
     }
-  });
 
-  it('should register a user(address) successfully', async () => {
     const actual = await splitterInstance.getAllUsers.call({
       from: ownerAddr
     });
