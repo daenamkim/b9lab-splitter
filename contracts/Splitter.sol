@@ -10,8 +10,8 @@ contract Splitter {
   User[] users;
   mapping(address => bool) accounts;
 
-  function addUser(string memory name) public {
-    require(!accounts[msg.sender], 'A given address is already registerd');
+  function registerUser(string memory name) public {
+    require(!accounts[msg.sender], 'A given address is already registered');
     // TODO: limit the number of users?
 
     User memory newUser = User({
