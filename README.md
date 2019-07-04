@@ -12,11 +12,24 @@ This is the first project of B9lab, BLOCKSTARS-ETH-2. :tada:
 - we can see the balances of Alice, Bob and Carol on the Web page.
 - Alice can use the Web page to split her ether.
 
-### Development
+### App Development
+
+```sh
+$ cd app
+$ yarn
+```
+
+```sh
+$ yarn serve
+```
+
+
+### Ethereum Solidity Development
 
 Install all packages you need for development.
 
 ```sh
+$ cd ethereum
 $ yarn
 ```
 
