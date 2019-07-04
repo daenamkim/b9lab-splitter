@@ -6,27 +6,50 @@ contract('Splitter', async accounts => {
     return;
   }
 
-  const addresses = {
-    alice: accounts[0],
-    bob: accounts[1],
-    carol: accounts[2]
-  };
+  const ownerAddr = accounts[0]; // accounts[0] is used to deploy a contract
+  const users = [
+    {
+      name: 'Alice',
+      addr: accounts[1]
+    },
+    {
+      name: 'Bob',
+      addr: accounts[2]
+    },
+    {
+      name: 'Carol',
+      addr: accounts[3]
+    }
+  ];
 
   let splitterInstance;
   beforeEach(async () => {
     splitterInstance = await Splitter.deployed();
-    // TODO: remove
-    const test = (await splitterInstance.getBalance.call()).toNumber();
-    console.log('BALANCE!!!!!', test);
+    for (const user of users) {
+      await splitterInstance.registerUser(user.name, {
+        from: user.addr
+      });
+    }
   });
 
   it('should register a user(address) successfully', async () => {
-    // register a user
-    // expect the number of users is 1
+    const actual = await splitterInstance.getAllUsers.call({
+      from: ownerAddr
+    });
+
+    const expected = users.map(user => [user.name, user.addr, '0']);
+    assert.deepEqual(actual, expected);
   });
   it('should not register the same user(address) again', async () => {
-    // register a user
-    // register a user again
+    try {
+      await splitterInstance.registerUser(users[0].name, {
+        from: users[0].addr
+      });
+      assert.fail();
+    } catch (error) {
+      assert.equal(error.reason, 'A given address is already registered');
+    }
+
     // expect a required error
     // expect the number of users is 1
   });
