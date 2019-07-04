@@ -1,0 +1,18 @@
+{
+  "name": "b9lab-splitter",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:daenamkim/b9lab-splitter.git",
+  "author": "Daenam Kim",
+  "license": "MIT",
+  "scripts": {
+    "test": "yarn truffle test",
+    "compile": "yarn truffle compile",
+    "deploy": "yarn truffle deploy",
+    "migrate": "yarn truffle migrate"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "truffle": "^5.0.26"
+  }
+}
