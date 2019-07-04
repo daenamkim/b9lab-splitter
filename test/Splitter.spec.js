@@ -1,6 +1,6 @@
 const Splitter = artifacts.require('Splitter.sol');
 
-contract('Splitter', async accounts => {
+contract('Splitter', accounts => {
   if (!accounts || accounts.length < 3) {
     console.error('Insufficient number of accounts');
     return;
@@ -22,18 +22,24 @@ contract('Splitter', async accounts => {
     }
   ];
 
+  const initUsers = async instance => {
+    for (const user of users) {
+      await instance.registerUser(user.name, {
+        from: user.addr
+      });
+    }
+  };
+
   let splitterInstance;
   beforeEach(async () => {
     splitterInstance = await Splitter.deployed();
   });
+  afterEach(async () => {
+    await splitterInstance.deleteAllUsers({ from: ownerAddr });
+  });
 
   it('should register a user(address) successfully', async () => {
-    for (const user of users) {
-      await splitterInstance.registerUser(user.name, {
-        from: user.addr
-      });
-    }
-
+    await initUsers(splitterInstance);
     const actual = await splitterInstance.getAllUsers.call({
       from: ownerAddr
     });
@@ -42,6 +48,7 @@ contract('Splitter', async accounts => {
     assert.deepEqual(actual, expected);
   });
   it('should not register the same user(address) again', async () => {
+    await initUsers(splitterInstance);
     try {
       await splitterInstance.registerUser(users[0].name, {
         from: users[0].addr
@@ -50,13 +57,37 @@ contract('Splitter', async accounts => {
     } catch (error) {
       assert.equal(error.reason, 'A given address is already registered');
     }
-
-    // expect a required error
-    // expect the number of users is 1
   });
-  it('should not contribute ether if user(address) is not registered', async () => {});
-  it('should not contribute ether(to wei) smaller than 1 wei', async () => {});
-  it('should not contribute ether until at least 3 users join', async () => {});
+  it.only('should not contribute ether if user(address) is not registered', async () => {
+    try {
+      await splitterInstance.contributeEther({
+        value: 100,
+        from: users[0].addr
+      });
+      assert.fail();
+    } catch (error) {
+      assert.equal(error.reason, 'A given address is not registered');
+    }
+  });
+  it.only('should not contribute ether(to wei) smaller than 1 wei', async () => {
+    await initUsers(splitterInstance);
+    try {
+      const test = await splitterInstance.contributeEther({
+        value: 0,
+        from: users[0].addr
+      });
+      assert.fail();
+    } catch (error) {
+      assert.equal(
+        error.reason,
+        'A given value should be bigger thatn 0 (wei)'
+      );
+    }
+  });
+  it('should not contribute ether until at least 3 users join', async () => {
+    try {
+    } catch (error) {}
+  });
   it('should contribute split ether to others', async () => {
     // register 3 users (Alice, Bob, Carol)
     // Alice send some ether to the contract
