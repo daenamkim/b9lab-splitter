@@ -48,14 +48,26 @@ contract Splitter {
     return users;
   }
 
+  // only for unit test
   function deleteAllUsers() public {
     require(msg.sender == owner, 'Delete all users can be run by owner only');
 
     for (uint i = 0; i < users.length; i++) {
       accounts[users[i].addr] = false;
     }
-
     delete users;
+  }
+
+  // only for unit test
+  function deleteUser(address addr) public {
+    require(msg.sender == owner, 'Delete a user can be run by owner only');
+
+    accounts[addr] = false;
+    for (uint i = 0; i < users.length; i++) {
+      if (addr == users[i].addr) {
+        delete users[i];
+      }
+    }
   }
 
   function getBalance() public view returns (uint) {
