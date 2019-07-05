@@ -2,37 +2,29 @@
   <v-app>
     <v-toolbar app>
       <v-toolbar-title class="headline text-uppercase">
-        <span>Vuetify</span>
-        <span class="font-weight-light">MATERIAL DESIGN</span>
+        <span>Splitter</span>
+        <span class="font-weight-light">B9LAB</span>
       </v-toolbar-title>
-      <v-spacer></v-spacer>
-      <v-btn
-        flat
-        href="https://github.com/vuetifyjs/vuetify/releases/latest"
-        target="_blank"
-      >
-        <span class="mr-2">Latest Release</span>
-      </v-btn>
     </v-toolbar>
-
     <v-content>
-      <HelloWorld/>
+      <splitter />
     </v-content>
   </v-app>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld'
+// import HelloWorld from './components/HelloWorld'
+import Splitter from "./components/Splitter";
 
 export default {
-  name: 'App',
+  name: "App",
   components: {
-    HelloWorld
+    Splitter
   },
-  data () {
+  data() {
     return {
       //
-    }
+    };
   }
-}
+};
 </script>

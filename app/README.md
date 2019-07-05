@@ -1,4 +1,4 @@
-# ts
+# app
 
 ## Project setup
 ```
