@@ -6,26 +6,26 @@ contract('Splitter', accounts => {
     return;
   }
 
-  const ownerAddr = accounts[0]; // accounts[0] is used to deploy a contract
+  const owner = accounts[0]; // accounts[0] is used to deploy a contract
   const users = [
     {
       name: 'Alice',
-      addr: accounts[1]
+      account: accounts[1]
     },
     {
       name: 'Bob',
-      addr: accounts[2]
+      account: accounts[2]
     },
     {
       name: 'Carol',
-      addr: accounts[3]
+      account: accounts[3]
     }
   ];
 
   const initUsers = async instance => {
     for (const user of users) {
       await instance.registerUser(user.name, {
-        from: user.addr
+        from: user.account
       });
     }
   };
@@ -35,65 +35,75 @@ contract('Splitter', accounts => {
     splitterInstance = await Splitter.deployed();
   });
   afterEach(async () => {
-    await splitterInstance.deleteAllUsers({ from: ownerAddr });
+    await splitterInstance.deleteAllUsers({ from: owner });
   });
 
-  it('should register a user(address) successfully', async () => {
+  it('should register a user(account) successfully', async () => {
     await initUsers(splitterInstance);
     const actual = await splitterInstance.getAllUsers.call({
-      from: users[0].addr
+      from: users[0].account
     });
 
-    const expected = users.map(user => [user.name, user.addr, '0']);
+    const expected = users.map(user => [user.name, user.account]);
     assert.deepEqual(actual, expected);
   });
-  it('should not register the same user(address) again', async () => {
+  it('should not register the same user(account) again', async () => {
     await initUsers(splitterInstance);
     try {
       await splitterInstance.registerUser(users[0].name, {
-        from: users[0].addr
+        from: users[0].account
       });
       assert.fail();
     } catch (error) {
       assert.equal(error.reason, 'A given address is already registered');
     }
   });
-  it('should not contribute ether if user(address) is not registered', async () => {
+  it('should not send ether if user(address) is not registered', async () => {
     try {
-      await splitterInstance.contributeEther({
+      await splitterInstance.splitEther({
         value: 100,
-        from: users[0].addr
+        from: users[0].account
       });
       assert.fail();
     } catch (error) {
       assert.equal(error.reason, 'A given address is not registered');
     }
   });
-  it('should not contribute ether(to wei) smaller than 1 wei', async () => {
+  it('should not send ether if msg.value and split value are smaller than 1', async () => {
     await initUsers(splitterInstance);
     try {
-      await splitterInstance.contributeEther({
+      await splitterInstance.splitEther({
         value: 0,
-        from: users[0].addr
+        from: users[0].account
+      });
+      assert.fail();
+    } catch (error) {
+      assert.equal(error.reason, 'A given value should be bigger than 0 (wei)');
+    }
+
+    try {
+      await splitterInstance.splitEther({
+        value: 1, // to make (value / (users.length - 1)) fails
+        from: users[0].account
       });
       assert.fail();
     } catch (error) {
       assert.equal(
         error.reason,
-        'A given value should be bigger thatn 0 (wei)'
+        'A given value is too small to be sent to others'
       );
     }
   });
-  it('should not contribute ether until at least 3 users join', async () => {
+  it('should not send ether until at least 3 users join', async () => {
     await initUsers(splitterInstance);
     try {
-      await splitterInstance.deleteUser(users[1].addr, {
-        from: ownerAddr
+      await splitterInstance.deleteUser({
+        from: users[1].account
       });
 
-      await splitterInstance.contributeEther({
+      await splitterInstance.splitEther({
         value: 100,
-        from: users[0].addr
+        from: users[0].account
       });
     } catch (error) {
       assert.equal(
@@ -102,20 +112,18 @@ contract('Splitter', accounts => {
       );
     }
   });
-  it('should contribute split ether to others', async () => {
+  it('should send split ether to others', async () => {
     await initUsers(splitterInstance);
-    await splitterInstance.contributeEther({
+    await splitterInstance.splitEther({
       value: 100,
-      from: users[0].addr
+      from: users[0].account
     });
     const actual = await splitterInstance.getAllUsers.call({
-      from: users[0].addr
+      from: users[0].account
     });
     const expected = users.map((user, index) =>
-      index !== 0 ? [user.name, user.addr, '50'] : [user.name, user.addr, '0']
+      index !== 0 ? [user.name, user.account] : [user.name, user.account]
     );
     assert.deepEqual(actual, expected);
   });
-  // TODO: cannot withdraw ether if its own balance if insufficient?
-  // TODO: each user can withdraw ether in the contract into its own address (pocket)?
 });
