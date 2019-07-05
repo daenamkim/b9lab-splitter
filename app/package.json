@@ -1,9 +1,9 @@
 {
-  "name": "app",
+  "name": "b9lab-splitter-app",
   "version": "0.1.0",
-  "private": true,
+  "license": "MIT",
   "scripts": {
-    "serve:eth": "cd ../ethereum && ./run-ganache.sh && truffle deploy",
+    "serve:eth": "cd ../ethereum && ./start-ganache.sh && truffle deploy",
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint"

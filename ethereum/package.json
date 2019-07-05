@@ -1,15 +1,9 @@
 {
-  "name": "b9lab-splitter",
-  "version": "1.0.0",
-  "main": "index.js",
-  "repository": "git@github.com:daenamkim/b9lab-splitter.git",
-  "author": "Daenam Kim",
+  "name": "b9lab-splitter-contract",
+  "version": "0.1.0",
   "license": "MIT",
   "scripts": {
-    "compile": "yarn truffle compile",
-    "deploy": "./run-ganache.sh && yarn truffle deploy && ./stop-ganache.sh",
-    "migrate": "./run-ganache.sh && yarn truffle migrate && ./stop-ganache.sh",
-    "test": "./run-ganache.sh && yarn truffle test && ./stop-ganache.sh"
+    "test": "./start-ganache.sh && yarn truffle test && ./stop-ganache.sh"
   },
   "dependencies": {},
   "devDependencies": {
