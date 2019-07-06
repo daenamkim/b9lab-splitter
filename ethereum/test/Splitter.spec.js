@@ -115,9 +115,10 @@ contract('Splitter', accounts => {
   it('should send split ether to others', async () => {
     await initUsers(splitterInstance);
     await splitterInstance.splitEther({
-      value: 100,
-      from: users[0].account
+      from: users[0].account,
+      value: 1000000000000000000
     });
+
     const actual = await splitterInstance.getAllUsers.call({
       from: users[0].account
     });
@@ -125,5 +126,11 @@ contract('Splitter', accounts => {
       index !== 0 ? [user.name, user.account] : [user.name, user.account]
     );
     assert.deepEqual(actual, expected);
+
+    await new Promise(resolve => {
+      setTimeout(() => {
+        resolve();
+      }, 2000);
+    });
   });
 });
