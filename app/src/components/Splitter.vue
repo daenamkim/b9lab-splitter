@@ -43,6 +43,7 @@ import splitterAbi from "../../../ethereum/build/contracts/Splitter.json";
 export default {
   name: "Splitter",
   data: () => ({
+    owner: null,
     accounts: [],
     users: [],
     splitterContract: null,
@@ -57,13 +58,14 @@ export default {
     async initAccounts() {
       try {
         this.accounts = await web3.eth.getAccounts();
+        this.owner = this.accounts[0];
         console.log(this.accounts);
       } catch (error) {
         console.error(error);
       }
     },
     async initContract() {
-      if (!this.accounts || !this.accounts.length < 10) {
+      if (!this.accounts || this.accounts.length < 10) {
         return;
       }
 
@@ -79,7 +81,7 @@ export default {
     async initUsers() {
       if (
         !this.accounts ||
-        !this.accounts.length < 10 ||
+        this.accounts.length < 10 ||
         !this.splitterContract
       ) {
         return;
@@ -100,37 +102,29 @@ export default {
       await this.updateUsers();
     },
     async updateUsers() {
+      let usersFromContract;
       try {
-        const usersFromContract = await this.splitterContract.methods.getAllUsers.call(
+        usersFromContract = await this.splitterContract.methods.getAllUsers.call(
           {
-            from: this.accounts[0]
+            from: this.owner
           }
         );
-        console.log(usersFromContract);
+
+        for (const userFromContract of usersFromContract) {
+          const user = {
+            name: userFromContract[0],
+            account: userFromContract[1],
+            balance: this.toEther(
+              await web3.eth.getBalance(userFromContract[1])
+            ),
+            valueSend: 1
+          };
+          this.users.push(user);
+        }
+        console.log(this.users);
       } catch (error) {
         console.log(error);
       }
-
-      this.users = [
-        {
-          name: "Alice",
-          account: this.accounts[1],
-          balance: this.toEther(await web3.eth.getBalance(this.accounts[1])),
-          valueSend: 1
-        },
-        {
-          name: "Bob",
-          account: this.accounts[2],
-          balance: this.toEther(await web3.eth.getBalance(this.accounts[2])),
-          valueSend: 1
-        },
-        {
-          name: "Carol",
-          account: this.accounts[3],
-          balance: this.toEther(await web3.eth.getBalance(this.accounts[3])),
-          valueSend: 1
-        }
-      ];
     },
     toEther(value) {
       return web3.utils.fromWei(value, "ether");
