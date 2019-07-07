@@ -87,7 +87,8 @@ export default {
         return;
       }
 
-      for (const [index, account] in this.accounts.slice(1, 4)) {
+      this.accounts.slice(1, 4).forEach(async (account, index) => {
+        console.log(index, account);
         try {
           await this.splitterContract.methods
             .registerUser(this.getName(index))
@@ -98,7 +99,8 @@ export default {
         } catch (error) {
           // console.error(error);
         }
-      }
+      });
+
       await this.updateUsers();
     },
     async updateUsers() {
