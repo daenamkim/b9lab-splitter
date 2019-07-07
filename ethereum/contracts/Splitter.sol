@@ -25,6 +25,8 @@ contract Splitter {
     accounts[msg.sender] = true;
   }
 
+  event EtherSplit();
+
   function splitEther() public payable {
     require(accounts[msg.sender], 'A given address is not registered');
     require(users.length > 2, 'Please wait until at least 3 users are registered');
@@ -40,6 +42,8 @@ contract Splitter {
         recipient.transfer(value);
       }
     }
+
+    emit EtherSplit();
   }
 
   function getAllUsers() public view returns (User[] memory) {
