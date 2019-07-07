@@ -49,11 +49,24 @@ export default {
     contractAddr: "0xCfEB869F69431e42cdB54A4F4f105C19C080A601"
   }),
   async created() {
+    await this.initAccounts();
     await this.initContract();
     await this.initUsers();
   },
   methods: {
+    async initAccounts() {
+      try {
+        this.accounts = await web3.eth.getAccounts();
+        console.log(this.accounts);
+      } catch (error) {
+        console.error(error);
+      }
+    },
     async initContract() {
+      if (!this.accounts || !this.accounts.length < 10) {
+        return;
+      }
+
       this.splitterContract = new web3.eth.Contract(
         splitterAbi.abi,
         this.contractAddr,
@@ -64,23 +77,20 @@ export default {
     },
     // TODO: in manual input mode?
     async initUsers() {
-      if (!this.splitterContract) {
+      if (
+        !this.accounts ||
+        !this.accounts.length < 10 ||
+        !this.splitterContract
+      ) {
         return;
       }
 
-      try {
-        this.accounts = await web3.eth.getAccounts();
-        console.log(this.accounts);
-      } catch (error) {
-        console.error(error);
-      }
-
-      for (const i in this.accounts.slice(1)) {
+      for (const [index, account] in this.accounts.slice(1, 4)) {
         try {
           await this.splitterContract.methods
-            .registerUser(this.getName(i))
+            .registerUser(this.getName(index))
             .send({
-              from: this.accounts[i],
+              from: account,
               gas: "500000"
             });
         } catch (error) {
@@ -90,18 +100,16 @@ export default {
       await this.updateUsers();
     },
     async updateUsers() {
-      // try {
-      //   const usersFromContract = await this.splitterContract.methods.getAllUsers.call(
-      //     {
-      //       from: this.accounts[0]
-      //     },
-      //     (error, result) => {
-      //       console.log(error, result);
-      //     }
-      //   );
-      // } catch (error) {
-      //   console.log(error);
-      // }
+      try {
+        const usersFromContract = await this.splitterContract.methods.getAllUsers.call(
+          {
+            from: this.accounts[0]
+          }
+        );
+        console.log(usersFromContract);
+      } catch (error) {
+        console.log(error);
+      }
 
       this.users = [
         {
