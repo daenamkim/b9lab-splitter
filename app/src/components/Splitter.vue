@@ -37,8 +37,7 @@ import Web3 from "web3";
 let web3 = new Web3(
   "http://127.0.0.1:8545" /* TODO: add production on Ropsten? */
 );
-
-// import splitterAbi from "../../../ethereum/build/contracts/Splitter.json";
+import splitterAbi from "../../../ethereum/build/contracts/Splitter.json";
 
 /* eslint-disable no-console */
 export default {
@@ -47,50 +46,63 @@ export default {
     accounts: [],
     users: [],
     splitterContract: null,
-    contractAddr: "0x287055250DBABA0284128ce0FD83Cf2150d34F2E"
+    contractAddr: "0xCfEB869F69431e42cdB54A4F4f105C19C080A601"
   }),
   async created() {
-    await this.initAccounts();
     await this.initContract();
-    await this.updateUsers();
+    await this.initUsers();
   },
   methods: {
-    async initAccounts() {
+    async initContract() {
+      this.splitterContract = new web3.eth.Contract(
+        splitterAbi.abi,
+        this.contractAddr,
+        {
+          defaultGasPrice: "20000000000"
+        }
+      );
+    },
+    // TODO: in manual input mode?
+    async initUsers() {
+      if (!this.splitterContract) {
+        return;
+      }
+
       try {
         this.accounts = await web3.eth.getAccounts();
         console.log(this.accounts);
       } catch (error) {
         console.error(error);
       }
-    },
-    async initContract() {
-      // TODO: make this work on dev and prod
-      // link to contract depoyed
-      // this.splitterContract = new web3.eth.Contract(
-      //   splitterAbi.abi,
-      //   this.contractAddr // TODO: make this automatically
-      // );
-      // await this.splitterContract.methods.registerUser("Alice", {
-      //   from: this.accounts[1]
-      // });
-      // await this.splitterContract.methods.registerUser("Bob", {
-      //   from: this.accounts[2]
-      // });
-      // await this.splitterContract.methods.registerUser("Carol", {
-      //   from: this.accounts[3]
-      // });
-      // console.log(
-      //   await this.splitterContract.methods.getAllUsers.call({
-      //     from: this.accounts[0]
-      //   })
-      // );
-      // TODO: finish split tests!!!!!
-      // await this.splitterContract.methods.splitEther({
-      //   from: this.accounts[1],
-      //   value: 10000000000000000000
-      // });
+
+      for (const i in this.accounts.slice(1)) {
+        try {
+          await this.splitterContract.methods
+            .registerUser(this.getName(i))
+            .send({
+              from: this.accounts[i],
+              gas: "500000"
+            });
+        } catch (error) {
+          // console.error(error);
+        }
+      }
+      await this.updateUsers();
     },
     async updateUsers() {
+      // try {
+      //   const usersFromContract = await this.splitterContract.methods.getAllUsers.call(
+      //     {
+      //       from: this.accounts[0]
+      //     },
+      //     (error, result) => {
+      //       console.log(error, result);
+      //     }
+      //   );
+      // } catch (error) {
+      //   console.log(error);
+      // }
+
       this.users = [
         {
           name: "Alice",
@@ -117,6 +129,10 @@ export default {
     },
     toWei(value) {
       return web3.utils.toWei(value, "ether");
+    },
+    getName(index) {
+      const names = ["Alice", "Bob", "Carol"];
+      return names[index % names.length];
     },
     getColor(index) {
       const colors = ["purple", "indigo", "green lighten-2"];
