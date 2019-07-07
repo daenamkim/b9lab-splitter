@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "license": "MIT",
   "scripts": {
-    "serve:eth": "cd ../ethereum && ./start-ganache.sh && truffle deploy",
+    "serve:eth": "cd ../ethereum && ./stop-ganache.sh && ./start-ganache.sh && truffle deploy",
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint"
