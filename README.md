@@ -43,7 +43,4 @@ Test, complile, deploy, and migrate a contract.
 
 ```sh
 $ yarn test
-$ yarn compile
-$ yarn deploy
-$ yarn migrate
 ```
