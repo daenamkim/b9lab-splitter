@@ -38,11 +38,13 @@ let web3 = new Web3(
   "http://127.0.0.1:8545" /* TODO: add production on Ropsten? */
 );
 import splitterAbi from "../../../ethereum/build/contracts/Splitter.json";
+import { setInterval } from "timers";
 
 /* eslint-disable no-console */
 export default {
   name: "Splitter",
   data: () => ({
+    isRunning: false,
     owner: null,
     accounts: [],
     users: [],
@@ -59,7 +61,6 @@ export default {
       try {
         this.accounts = await web3.eth.getAccounts();
         this.owner = this.accounts[0];
-        console.log(this.accounts);
       } catch (error) {
         console.error(error);
       }
@@ -76,6 +77,27 @@ export default {
           defaultGasPrice: "20000000000"
         }
       );
+
+      // TODO:
+      // "Error: Subscriptions are not supported with the HttpProvider."
+      // https://github.com/trufflesuite/truffle/issues/1633
+      // this.splitterContract.events
+      //   .EtherSplit(
+      //     {
+      //       fromBlock: "latest"
+      //     },
+      //     (error, event) => {
+      //       console.log(error, event);
+      //       // TODO: update users
+      //     }
+      //   )
+      //   .on("data", event => {
+      //     console.log(event);
+      //   })
+      //   .on("changed", event => {
+      //     console.log(event);
+      //   })
+      //   .on("error", console.error);
     },
     // TODO: in manual input mode?
     async initUsers() {
@@ -87,8 +109,8 @@ export default {
         return;
       }
 
+      // index 0 is for owner
       this.accounts.slice(1, 4).forEach(async (account, index) => {
-        console.log(index, account);
         try {
           await this.splitterContract.methods
             .registerUser(this.getName(index))
@@ -101,12 +123,8 @@ export default {
         }
       });
 
-      await this.updateUsers();
-    },
-    async updateUsers() {
-      let usersFromContract;
       try {
-        usersFromContract = await this.splitterContract.methods.getAllUsers.call(
+        const usersFromContract = await this.splitterContract.methods.getAllUsers.call(
           {
             from: this.owner
           }
@@ -123,16 +141,25 @@ export default {
           };
           this.users.push(user);
         }
-        console.log(this.users);
       } catch (error) {
         console.log(error);
       }
+
+      // alternative solution for "Error: Subscriptions are not supported with the HttpProvider."
+      setInterval(() => {
+        this.updateBalances();
+      }, 1000);
+    },
+    async updateBalances() {
+      for (const user of this.users) {
+        user.balance = this.toEther(await web3.eth.getBalance(user.account));
+      }
     },
     toEther(value) {
-      return web3.utils.fromWei(value, "ether");
+      return web3.utils.fromWei(String(value), "ether");
     },
     toWei(value) {
-      return web3.utils.toWei(value, "ether");
+      return web3.utils.toWei(String(value), "ether");
     },
     getName(index) {
       const names = ["Alice", "Bob", "Carol"];
@@ -143,43 +170,20 @@ export default {
       return colors[index % colors.length];
     },
     async splitEther(index) {
-      // try {
-      //   await this.splitterContract.methods.splitEther({
-      //     from: this.accounts[1],
-      //     value: 5000000000000000000
-      //   });
-
-      //   console.log(
-      //     await web3.eth.getBalance(this.accounts[0]),
-      //     await web3.eth.getBalance(this.accounts[1]),
-      //     await web3.eth.getBalance(this.accounts[2]),
-      //     await web3.eth.getBalance(this.accounts[3])
-      //   );
-      // } catch (error) {
-      //   console.error(error);
+      // if (this.isRunning) {
+      //   return;
       // }
 
-      // test direct transfer
-      for (let i = 0; i < this.users.length; i++) {
-        if (index !== i) {
-          web3.eth.sendTransaction(
-            {
-              from: this.users[index].account,
-              to: this.users[i].account,
-              value: this.toWei(
-                String(
-                  parseInt(this.users[index].valueSend) /
-                    (this.users.length - 1)
-                )
-              )
-            },
-            async (error, hash) => {
-              this.updateUsers();
-              console.log(error, hash);
-            }
-          );
-        }
+      // this.isRunning = true;
+      try {
+        await this.splitterContract.methods.splitEther().send({
+          from: this.users[index].account,
+          value: this.toWei(this.users[index].valueSend)
+        });
+      } catch (error) {
+        console.error(error);
       }
+      // this.isRunning = false;
     }
   }
 };
