@@ -13,7 +13,6 @@ contract Splitter {
   function sendEther(address payable receiver1, address payable receiver2) public payable {
     // One transfer call needs 2300 gas
     require(msg.sender.balance + 4600 > msg.value, 'A sender should have enough balance');
-    require(msg.value % 2 == 0, 'The value should be evenly divisible');
     require(msg.value > 0, 'A given value should be bigger than 0');
     require(msg.sender != receivers[0] && msg.sender != receivers[1], 'A sender should not be one of receivers');
 
