@@ -7,28 +7,9 @@ contract('Splitter', accounts => {
   }
 
   const owner = accounts[0]; // accounts[0] is used to deploy a contract
-  const users = [
-    {
-      name: 'Alice',
-      account: accounts[1]
-    },
-    {
-      name: 'Bob',
-      account: accounts[2]
-    },
-    {
-      name: 'Carol',
-      account: accounts[3]
-    }
-  ];
-
-  const initUsers = async instance => {
-    for (const user of users) {
-      await instance.registerUser(user.name, {
-        from: user.account
-      });
-    }
-  };
+  const alice = accounts[1];
+  const bob = accounts[2];
+  const carol = accounts[3];
 
   let splitterInstance;
   beforeEach(async () => {
@@ -37,40 +18,30 @@ contract('Splitter', accounts => {
   afterEach(async () => {
     await splitterInstance.deleteAllUsers({ from: owner });
   });
-
-  it('should register a user(account) successfully', async () => {
-    await initUsers(splitterInstance);
-    const actual = await splitterInstance.getAllUsers.call({
-      from: users[0].account
-    });
-
-    const expected = users.map(user => [user.name, user.account]);
-    assert.deepEqual(actual, expected);
-  });
-  it('should not register the same user(account) again', async () => {
-    await initUsers(splitterInstance);
+  it('should not send ether if the number of receivers are not 2', async () => {
     try {
-      await splitterInstance.registerUser(users[0].name, {
-        from: users[0].account
+      await splitterInstance.splitEther([bob], {
+        value: 100,
+        from: alice
       });
       assert.fail();
     } catch (error) {
-      assert.equal(error.reason, 'A given address is already registered');
+      assert.equal(error.reason, 'The number of receivers should be 2');
     }
   });
-  it('should not send ether if user(address) is not registered', async () => {
+  it('should not send ether if msg.value is not evenly divisible', async () => {
     try {
-      await splitterInstance.splitEther({
-        value: 100,
-        from: users[0].account
+      await splitterInstance.splitEther([bob], {
+        value: 33,
+        from: alice
       });
       assert.fail();
+      A;
     } catch (error) {
-      assert.equal(error.reason, 'A given address is not registered');
+      assert.equal(error.reason, 'The value should be evenly divisible');
     }
   });
   it('should not send ether if msg.value and split value are smaller than 1', async () => {
-    await initUsers(splitterInstance);
     try {
       await splitterInstance.splitEther({
         value: 0,
@@ -94,43 +65,14 @@ contract('Splitter', accounts => {
       );
     }
   });
-  it('should not send ether until at least 3 users join', async () => {
-    await initUsers(splitterInstance);
-    try {
-      await splitterInstance.deleteUser({
-        from: users[1].account
-      });
-
-      await splitterInstance.splitEther({
-        value: 100,
-        from: users[0].account
-      });
-    } catch (error) {
-      assert.equal(
-        error.reason,
-        'Please wait until at least 3 users are registered'
-      );
-    }
-  });
   it('should send split ether to others', async () => {
-    await initUsers(splitterInstance);
-    await splitterInstance.splitEther({
-      from: users[0].account,
-      value: 1000000000000000000
+    const value = web3.utils.toWei(1, 'ether');
+    await splitterInstance.splitEther([bob, carol], {
+      from: alice,
+      value: value
     });
-
-    const actual = await splitterInstance.getAllUsers.call({
-      from: users[0].account
-    });
-    const expected = users.map((user, index) =>
-      index !== 0 ? [user.name, user.account] : [user.name, user.account]
-    );
-    assert.deepEqual(actual, expected);
-
-    await new Promise(resolve => {
-      setTimeout(() => {
-        resolve();
-      }, 2000);
-    });
+    console.log(await web3.eth.getBalance(alice));
+    console.log(await web3.eth.getBalance(bob));
+    console.log(await web3.eth.getBalance(carol));
   });
 });
