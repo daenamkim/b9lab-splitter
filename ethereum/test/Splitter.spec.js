@@ -19,6 +19,17 @@ contract('Splitter', accounts => {
   beforeEach(async () => {
     splitterInstance = await Splitter.deployed();
   });
+  it("should not send if value is bigger thant sender's balance", async () => {
+    try {
+      await splitterInstance.sendEther([bob], {
+        value: web3.utils.toWei('100', 'ether'),
+        from: alice
+      });
+      assert.fail();
+    } catch (error) {
+      assert.equal(error.reason, 'A sender should have enough balance');
+    }
+  });
   it('should not send ether if the number of receivers are not 2', async () => {
     try {
       await splitterInstance.sendEther([bob], {

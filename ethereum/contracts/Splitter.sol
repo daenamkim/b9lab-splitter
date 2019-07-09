@@ -12,6 +12,7 @@ contract Splitter {
   event Transfer(address from, bool status, uint balance1, uint balance2);
 
   function sendEther(address[] memory receivers) public payable {
+    require(msg.sender.balance > msg.value, 'A sender should have enough balance');
     require(receivers.length == 2, 'The number of receivers should be 2');
     require(msg.value % 2 == 0, 'The value should be evenly divisible');
     require(msg.value > 0, 'A given value should be bigger than 0');
