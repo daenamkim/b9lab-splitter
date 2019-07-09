@@ -19,9 +19,6 @@ contract('Splitter', accounts => {
   beforeEach(async () => {
     splitterInstance = await Splitter.deployed();
   });
-  afterEach(async () => {
-    await splitterInstance.deleteAllUsers({ from: owner });
-  });
   it('should not send ether if the number of receivers are not 2', async () => {
     try {
       await splitterInstance.sendEther([bob], {
