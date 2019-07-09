@@ -19,7 +19,7 @@ contract('Splitter', accounts => {
   beforeEach(async () => {
     splitterInstance = await Splitter.deployed();
   });
-  it("should not send if value is bigger thant sender's balance", async () => {
+  it("should not send if value is bigger thant sender's balance + 4600 gas (two transfers)", async () => {
     try {
       await splitterInstance.sendEther([bob], {
         value: web3.utils.toWei('100', 'ether'),
