@@ -1,5 +1,4 @@
 pragma solidity >= 0.5.7;
-pragma experimental ABIEncoderV2;
 
 contract Splitter {
   mapping(address => bool) accounts;
