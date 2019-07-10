@@ -1,4 +1,5 @@
 const Splitter = artifacts.require('Splitter.sol');
+const NotPayable = artifacts.require('NotPayable.sol');
 
 contract('Splitter', accounts => {
   if (!accounts || accounts.length < 3) {
@@ -6,7 +7,6 @@ contract('Splitter', accounts => {
     return;
   }
 
-  const owner = accounts[0]; // accounts[0] is used to deploy a contract
   const alice = accounts[1];
   const bob = accounts[2];
   const carol = accounts[3];
@@ -16,12 +16,14 @@ contract('Splitter', accounts => {
   };
 
   let splitterInstance;
+  let notPayable;
   beforeEach(async () => {
     splitterInstance = await Splitter.deployed();
+    notPayableInstance = await NotPayable.deployed();
   });
   it("should not send if value is bigger thant sender's balance + 4600 gas (two transfers)", async () => {
     try {
-      await splitterInstance.sendEther([bob], {
+      await splitterInstance.sendEther(bob, carol, {
         value: web3.utils.toWei('100', 'ether'),
         from: alice
       });
@@ -30,31 +32,9 @@ contract('Splitter', accounts => {
       assert.equal(error.reason, 'A sender should have enough balance');
     }
   });
-  it('should not send ether if the number of receivers are not 2', async () => {
-    try {
-      await splitterInstance.sendEther([bob], {
-        value: 100,
-        from: alice
-      });
-      assert.fail();
-    } catch (error) {
-      assert.equal(error.reason, 'The number of receivers should be 2');
-    }
-  });
-  it('should not send ether if msg.value is not evenly divisible', async () => {
-    try {
-      await splitterInstance.sendEther([bob, carol], {
-        value: 33,
-        from: alice
-      });
-      assert.fail();
-    } catch (error) {
-      assert.equal(error.reason, 'The value should be evenly divisible');
-    }
-  });
   it('should not send ether if divided msg.value is smaller than 1', async () => {
     try {
-      await splitterInstance.sendEther([bob, carol], {
+      await splitterInstance.sendEther(bob, carol, {
         value: 0,
         from: alice
       });
@@ -65,7 +45,7 @@ contract('Splitter', accounts => {
   });
   it('should not send ether if a sender is one of receivers', async () => {
     try {
-      await splitterInstance.sendEther([alice, carol], {
+      await splitterInstance.sendEther(alice, carol, {
         value: 100,
         from: alice
       });
@@ -74,8 +54,35 @@ contract('Splitter', accounts => {
       assert.equal(error.reason, 'A sender should not be one of receivers');
     }
   });
+  it('should not send ether if one of receivers refuses funds', async () => {
+    try {
+      await splitterInstance.sendEther(notPayableInstance.address, carol, {
+        value: web3.utils.toWei('1', 'ether'),
+        from: alice
+      });
+      assert.fail();
+    } catch (error) {
+      assert.equal(error.reason, 'Transaction with receiver 1 has been failed');
+
+      const contractBalance = (await splitterInstance.getContractBalance()).toString();
+      assert.equal(contractBalance, '0');
+    }
+
+    try {
+      await splitterInstance.sendEther(bob, notPayableInstance.address, {
+        value: web3.utils.toWei('1', 'ether'),
+        from: alice
+      });
+      assert.fail();
+    } catch (error) {
+      assert.equal(error.reason, 'Transaction with receiver 2 has been failed');
+
+      const contractBalance = (await splitterInstance.getContractBalance()).toString();
+      assert.equal(contractBalance, '0');
+    }
+  });
   it('should send divided ether to others', async () => {
-    await splitterInstance.sendEther([bob, carol], {
+    await splitterInstance.sendEther(bob, carol, {
       from: alice,
       value: web3.utils.toWei('10', 'ether')
     });

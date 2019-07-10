@@ -1,4 +1,4 @@
-pragma solidity 0.5.10;
+pragma solidity >=0.5.8;
 
 contract Splitter {
   mapping(address => bool) blackAccounts;
@@ -34,5 +34,10 @@ contract Splitter {
     }
 
     emit Transfer(msg.sender, receiver1, receiver2);
+  }
+
+  // for test only
+  function getContractBalance() public view returns (uint) {
+    return address(this).balance;
   }
 }
