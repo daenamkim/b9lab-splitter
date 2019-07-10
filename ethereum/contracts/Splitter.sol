@@ -1,7 +1,7 @@
 pragma solidity 0.5.10;
 
 contract Splitter {
-  mapping(address => bool) accounts;
+  mapping(address => bool) blackAccounts;
   address owner;
 
   constructor() public {
@@ -16,11 +16,21 @@ contract Splitter {
     require(msg.value > 0, 'A given value should be bigger than 0');
     require(msg.sender != receiver1 && msg.sender != receiver2, 'A sender should not be one of receivers');
 
+    if (blackAccounts[receiver1] || blackAccounts[receiver2]) {
+      revert('A receiver is in black list');
+    }
+
     uint value = msg.value / 2;
 
-    // security/no-send: Consider using 'transfer' in place of 'send'.
-    if (!receiver1.send(value) || !receiver2.send(value)) {
-      revert('Transaction has been failed');
+    // TODO: security/no-send: Consider using 'transfer' in place of 'send'.
+    if (!receiver1.send(value)) {
+      blackAccounts[receiver1] = true;
+      revert('Transaction with receiver 1 has been failed');
+    }
+
+    if (!receiver2.send(value)) {
+      blackAccounts[receiver2] = true;
+      revert('Transaction with receiver 2 has been failed');
     }
 
     emit Transfer(msg.sender, receiver1, receiver2);
