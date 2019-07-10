@@ -17,8 +17,11 @@ contract Splitter {
     require(msg.sender != receiver1 && msg.sender != receiver2, 'A sender should not be one of receivers');
 
     uint value = msg.value / 2;
-    receiver1.transfer(value);
-    receiver2.transfer(value);
+
+    // security/no-send: Consider using 'transfer' in place of 'send'.
+    if (!receiver1.send(value) || !receiver2.send(value)) {
+      revert('Transaction has been failed');
+    }
 
     emit Transfer(msg.sender, receiver1, receiver2);
   }
