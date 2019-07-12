@@ -1,17 +1,14 @@
 pragma solidity >=0.5.8;
 
-contract Splitter {
+import './Pausable.sol';
+
+contract Splitter is Pausable {
   mapping(address => uint) accounts;
-  address owner;
 
   event SplitHandle(address from, address receiver1, address receiver2);
   event WithdrawHandle(address requester);
 
-  constructor() public {
-    owner = msg.sender;
-  }
-
-  function split(address payable receiver1, address payable receiver2) public payable {
+  function split(address payable receiver1, address payable receiver2) public payable whenNotPaused {
     require(msg.value > 0, 'A given value should be bigger than 0');
     require(msg.sender != receiver1 && msg.sender != receiver2, 'A sender should not be one of receivers');
 
@@ -25,7 +22,7 @@ contract Splitter {
     emit SplitHandle(msg.sender, receiver1, receiver2);
   }
 
-  function withdraw() public {
+  function withdraw() public whenNotPaused {
     require(accounts[msg.sender] > 0, 'A requested account should have balance');
 
     msg.sender.transfer(accounts[msg.sender]);
