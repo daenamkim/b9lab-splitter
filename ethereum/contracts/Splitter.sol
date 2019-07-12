@@ -12,8 +12,6 @@ contract Splitter {
   }
 
   function split(address payable receiver1, address payable receiver2) public payable {
-    // One transfer call needs 2300 gas
-    require(msg.sender.balance + 4600 > msg.value, 'A sender should have enough balance');
     require(msg.value > 0, 'A given value should be bigger than 0');
     require(msg.sender != receiver1 && msg.sender != receiver2, 'A sender should not be one of receivers');
 
