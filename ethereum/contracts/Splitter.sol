@@ -28,6 +28,7 @@ contract Splitter {
     require(accounts[msg.sender] > 0, 'A requested account should have balance');
 
     msg.sender.transfer(accounts[msg.sender]);
+    accounts[msg.sender] = 0;
 
     emit WithdrawHandle(msg.sender);
   }
