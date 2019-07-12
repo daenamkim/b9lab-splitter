@@ -18,8 +18,9 @@ contract Splitter {
     require(msg.sender != receiver1 && msg.sender != receiver2, 'A sender should not be one of receivers');
 
     uint value = msg.value / 2;
-    accounts[receiver1] = value;
-    accounts[receiver2] = value;
+    require(accounts[receiver1] + value > value && accounts[receiver2] + value > value, 'A value is too big');
+    accounts[receiver1] += value;
+    accounts[receiver2] += value;
 
     emit SplitHandle(msg.sender, receiver1, receiver2);
   }
