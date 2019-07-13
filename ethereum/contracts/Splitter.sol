@@ -10,6 +10,7 @@ contract Splitter is Pausable {
 
   function split(address payable receiver1, address payable receiver2) public payable whenNotPaused {
     require(msg.value > 0, 'A given value should be bigger than 0');
+    require(receiver1 != address(0) && receiver2 != address(0), 'A receiver should not be 0x');
     require(msg.sender != receiver1 && msg.sender != receiver2, 'A sender should not be one of receivers');
 
     uint mod = msg.value % 2;
