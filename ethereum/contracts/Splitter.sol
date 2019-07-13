@@ -5,8 +5,8 @@ import './Pausable.sol';
 contract Splitter is Pausable {
   mapping(address => uint) accounts;
 
-  event SplitHandle(address from, address receiver1, address receiver2);
-  event WithdrawHandle(address requester);
+  event LogSplit(address from, uint value, address receiver1, address receiver2);
+  event LogWithdraw(address requester);
 
   function split(address payable receiver1, address payable receiver2) public payable whenNotPaused {
     require(msg.value > 0, 'A given value should be bigger than 0');
@@ -19,7 +19,7 @@ contract Splitter is Pausable {
     accounts[receiver1] += value;
     accounts[receiver2] += value;
 
-    emit SplitHandle(msg.sender, receiver1, receiver2);
+    emit LogSplit(msg.sender, msg.value, receiver1, receiver2);
   }
 
   function withdraw() public whenNotPaused {
@@ -28,7 +28,7 @@ contract Splitter is Pausable {
     msg.sender.transfer(accounts[msg.sender]);
     accounts[msg.sender] = 0;
 
-    emit WithdrawHandle(msg.sender);
+    emit LogWithdraw(msg.sender);
   }
 
   function getContractBalance() public view returns (uint) {
