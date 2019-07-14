@@ -1,4 +1,3 @@
-const { toEther, toWei } = require('./utils');
 const BigNumber = require('big-number');
 
 contract('Splitter', accounts => {
@@ -122,7 +121,7 @@ contract('Splitter', accounts => {
   it('should withdraw value to address', async () => {
     await splitterInstance.split(bob, carol, {
       from: alice,
-      value: toWei('30')
+      value: web3.utils.toWei('30', 'ether')
     });
 
     const accountsBefore = {};
