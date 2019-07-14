@@ -12,14 +12,12 @@ contract('Splitter', accounts => {
   let bob;
   let carol;
   let splitterInstance;
-  let notPayableInstance;
   beforeEach(async () => {
     owner = accounts[0];
     alice = accounts[1];
     bob = accounts[2];
     carol = accounts[3];
     splitterInstance = await artifacts.require('Splitter.sol').new();
-    notPayableInstance = await artifacts.require('NotPayable.sol').new();
   });
   it('should not split value if msg.value is smaller than 1', async () => {
     try {
