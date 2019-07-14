@@ -20,7 +20,7 @@ contract('Splitter', accounts => {
     splitterInstance = await artifacts.require('Splitter.sol').deployed();
     notPayableInstance = await artifacts.require('NotPayable.sol').deployed();
   });
-  it('should not split ether if msg.value is smaller than 1', async () => {
+  it('should not split value if msg.value is smaller than 1', async () => {
     try {
       await splitterInstance.split(bob, carol, {
         value: 0,
@@ -31,7 +31,7 @@ contract('Splitter', accounts => {
       assert.equal(error.reason, 'A given value should be bigger than 0');
     }
   });
-  it('should not split ether if a receiver address is empty', async () => {
+  it('should not split value if a receiver address is empty', async () => {
     try {
       await splitterInstance.split(bob, {
         from: alice,
@@ -63,7 +63,7 @@ contract('Splitter', accounts => {
       assert.equal(error.reason, 'A receiver should not be 0x');
     }
   });
-  it('should not split ether if a sender is one of receivers', async () => {
+  it('should not split value if a sender is one of receivers', async () => {
     try {
       await splitterInstance.split(alice, carol, {
         value: '100',
@@ -75,7 +75,7 @@ contract('Splitter', accounts => {
     }
   });
   // TODO:
-  // it('should not split ether if value is too big', async () => {
+  // it('should not split value if value is too big', async () => {
   //   try {
   //     await splitterInstance.split(alice, carol, {
   //       value:
@@ -88,10 +88,11 @@ contract('Splitter', accounts => {
   //     assert.equal(error.reason, 'A value is too big');
   //   }
   // });
-  it('should store divided ether to each other and remainder to sender back', async () => {
+  it('should store divided value to each other and remainder to sender back', async () => {
+    const value = '11';
     await splitterInstance.split(bob, carol, {
       from: alice,
-      value: '11'
+      value
     });
 
     const expected = {};
@@ -105,5 +106,10 @@ contract('Splitter', accounts => {
         expected[key]
       );
     }
+
+    assert.equal(
+      (await splitterInstance.getContractBalance({ from: owner })).toString(),
+      value
+    );
   });
 });
