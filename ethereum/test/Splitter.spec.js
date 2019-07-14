@@ -1,4 +1,5 @@
 const { toEther, toWei } = require('./utils');
+const BigNumber = require('big-number');
 
 contract('Splitter', accounts => {
   if (!accounts || accounts.length < 4) {
@@ -17,8 +18,8 @@ contract('Splitter', accounts => {
     alice = accounts[1];
     bob = accounts[2];
     carol = accounts[3];
-    splitterInstance = await artifacts.require('Splitter.sol').deployed();
-    notPayableInstance = await artifacts.require('NotPayable.sol').deployed();
+    splitterInstance = await artifacts.require('Splitter.sol').new();
+    notPayableInstance = await artifacts.require('NotPayable.sol').new();
   });
   it('should not split value if msg.value is smaller than 1', async () => {
     try {
@@ -111,5 +112,30 @@ contract('Splitter', accounts => {
       (await splitterInstance.getContractBalance({ from: owner })).toString(),
       value
     );
+  });
+  it('should not allow to withdraw when account balance is 0', async () => {
+    try {
+      await splitterInstance.withdraw({ from: bob });
+      assert.fail();
+    } catch (error) {
+      assert.equal(error.reason, 'A requested account should have balance');
+    }
+  });
+  it('should withdraw value to address', async () => {
+    await splitterInstance.split(bob, carol, {
+      from: alice,
+      value: toWei('30')
+    });
+
+    const accountsBefore = {};
+    accountsBefore[bob] = await web3.eth.getBalance(bob);
+    accountsBefore[carol] = await web3.eth.getBalance(carol);
+    for (const key in accountsBefore) {
+      await splitterInstance.withdraw({ from: key });
+      // ganache provider doesn't support event catch but it was OK without delay
+      const actual = await web3.eth.getBalance(key);
+      assert.notEqual(actual, accountsBefore[key]);
+      assert.isTrue(BigNumber(actual).gt(accountsBefore[key]));
+    }
   });
 });
