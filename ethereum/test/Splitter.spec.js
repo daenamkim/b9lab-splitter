@@ -1,20 +1,22 @@
+const { toEther, toWei } = require('./utils');
+
 contract('Splitter', accounts => {
   if (!accounts || accounts.length < 4) {
     console.error('Insufficient number of accounts');
     return;
   }
 
-  const alice = accounts[1];
-  const bob = accounts[2];
-  const carol = accounts[3];
-
-  const toEther = value => {
-    return web3.utils.fromWei(value, 'ether');
-  };
-
+  let owner;
+  let alice;
+  let bob;
+  let carol;
   let splitterInstance;
   let notPayableInstance;
   beforeEach(async () => {
+    owner = accounts[0];
+    alice = accounts[1];
+    bob = accounts[2];
+    carol = accounts[3];
     splitterInstance = await artifacts.require('Splitter.sol').deployed();
     notPayableInstance = await artifacts.require('NotPayable.sol').deployed();
   });
@@ -33,7 +35,7 @@ contract('Splitter', accounts => {
     try {
       await splitterInstance.split(bob, {
         from: alice,
-        value: 100
+        value: '100'
       });
     } catch (error) {
       assert.equal(error.reason, 'invalid address');
@@ -42,7 +44,7 @@ contract('Splitter', accounts => {
     try {
       await splitterInstance.split(bob, 0, {
         from: alice,
-        value: 100
+        value: '100'
       });
     } catch (error) {
       assert.equal(error.reason, 'invalid address');
@@ -54,7 +56,7 @@ contract('Splitter', accounts => {
         '0x0000000000000000000000000000000000000000',
         {
           from: alice,
-          value: 100
+          value: '100'
         }
       );
     } catch (error) {
@@ -64,12 +66,30 @@ contract('Splitter', accounts => {
   it('should not send ether if a sender is one of receivers', async () => {
     try {
       await splitterInstance.split(alice, carol, {
-        value: 100,
+        value: '100',
         from: alice
       });
       assert.fail();
     } catch (error) {
       assert.equal(error.reason, 'A sender should not be one of receivers');
+    }
+  });
+  it('should store divided ether to each other and remainder to sender back', async () => {
+    await splitterInstance.split(bob, carol, {
+      from: alice,
+      value: '11'
+    });
+
+    const expected = {};
+    expected[alice] = '1';
+    expected[bob] = '5';
+    expected[carol] = '5';
+
+    for (const key in expected) {
+      assert.equal(
+        (await splitterInstance.accounts(key, { from: owner })).toString(),
+        expected[key]
+      );
     }
   });
 });
