@@ -3,7 +3,7 @@ pragma solidity >=0.5.8;
 import './Pausable.sol';
 
 contract Splitter is Pausable {
-  mapping(address => uint) accounts;
+  mapping(address => uint) public accounts;
 
   event LogSplit(address from, uint value, address receiver1, address receiver2);
   event LogWithdraw(address requester);
@@ -15,7 +15,7 @@ contract Splitter is Pausable {
 
     uint mod = msg.value % 2;
     uint value = msg.value / 2;
-    require(accounts[receiver1] + value > value && accounts[receiver2] + value > value, 'A value is too big');
+    require(accounts[receiver1] + value >= value && accounts[receiver2] + value >= value, 'A value is too big');
     accounts[msg.sender] += mod;
     accounts[receiver1] += value;
     accounts[receiver2] += value;
