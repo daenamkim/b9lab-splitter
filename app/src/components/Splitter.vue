@@ -25,8 +25,8 @@
                   large
                   v-bind:color="getColor(index).name"
                   @click="splitHandle(index)"
-                  :disabled="!validateValue(user.valueSend) || !user.isEnabled"
-                >Split</v-btn>
+                  :disabled="!validateValue(user.valueSend) || !user.isEnabled || user.isRunning"
+                >{{ user.isRunning ? 'Sending...' : 'Split'}}</v-btn>
               </v-flex>
             </v-layout>
           </v-card>
@@ -54,15 +54,15 @@
                   <v-list-tile v-for="(user, index) in usersContract.slice(1)" :key="index">
                     <v-list-tile-content>
                       <v-list-tile-title>{{ user.account }}</v-list-tile-title>
-                      <v-list-tile-sub-title>{{ user.balance }} ETH</v-list-tile-sub-title>
+                      <v-list-tile-sub-title>{{ user.balance }} ETH {{String(user.isRunning)}}</v-list-tile-sub-title>
                     </v-list-tile-content>
                     <v-btn
                       depressed
                       large
                       v-bind:color="getColor(index).name"
                       @click="withdrawHandle(index)"
-                      :disabled="!validateValue(user.balance) || !user.isEnabled"
-                    >Withdraw</v-btn>
+                      :disabled="!validateValue(user.balance) || !user.isEnabled || user.isRunning"
+                    >{{ user.isRunning ? 'Sending...' : 'Withdraw'}}</v-btn>
                   </v-list-tile>
                 </v-list>
               </v-flex>
@@ -93,7 +93,6 @@ export default {
       "0x5D0af8790F21375C65A75C3822d75fEe75BfC649"
     ],
     web3: null,
-    isRunning: false,
     owner: null,
     users: [],
     splitterContract: null,
@@ -140,7 +139,8 @@ export default {
           await this.web3.eth.getBalance(this.contractAddr)
         ),
         isContract: true,
-        isEnabled: true
+        isEnabled: true,
+        isRunning: false
       };
       this.usersContract.push(info);
       for (const account of accounts) {
@@ -152,7 +152,8 @@ export default {
               .call()
           ),
           isContract: false,
-          isEnabled: true
+          isEnabled: true,
+          isRunning: false
         };
         this.usersContract.push(info);
       }
@@ -165,37 +166,42 @@ export default {
             {
               fromBlock: "latest"
             },
-            (error, event) => {
-              this.isRunning = false;
-              this.updateUsers();
+            async (error, event) => {
+              await this.updateUsers("split");
               console.log(error, event);
             }
           )
           .on("data", event => {
-            console.log(event);
+            console.log("data", event);
           })
           .on("changed", event => {
-            console.log(event);
+            console.log("changed", event);
           })
-          .on("error", console.error);
+          .on("error", async error => {
+            await this.updateUsers("split");
+            console.error(error);
+          });
 
         this.splitterContract.events
           .LogWithdraw(
             {
               fromBlock: "latest"
             },
-            (error, event) => {
-              this.updateUsers();
+            async (error, event) => {
+              await this.updateUsers("withdraw");
               console.log(error, event);
             }
           )
           .on("data", event => {
-            console.log(event);
+            console.log("data", event);
           })
           .on("changed", event => {
-            console.log(event);
+            console.log("changed", event);
           })
-          .on("error", console.error);
+          .on("error", async error => {
+            await this.updateUsers("withdraw");
+            console.error(error);
+          });
       }
     },
     async initAccounts() {
@@ -221,7 +227,8 @@ export default {
             account: accounts[i],
             balance: this.toEther(await this.web3.eth.getBalance(accounts[i])),
             valueSend: 1,
-            isEnabled: true
+            isEnabled: true,
+            isRunning: false
           };
           this.users.push(user);
         }
@@ -239,12 +246,13 @@ export default {
         ? true
         : account === (await this.web3.eth.getAccounts())[0];
     },
-    async updateUsers() {
+    async updateUsers(event = "") {
       for (const user of this.users) {
         user.balance = this.toEther(
           await this.web3.eth.getBalance(user.account)
         );
         user.isEnabled = await this.validateAccount(user.account);
+        user.isRunning = event === "split" ? false : user.isRunning;
       }
 
       for (const user of this.usersContract) {
@@ -254,6 +262,7 @@ export default {
             )
           : this.toEther(await this.web3.eth.getBalance(user.account));
         user.isEnabled = await this.validateAccount(user.account);
+        user.isRunning = event === "withdraw" ? false : user.isRunning;
       }
     },
     toEther(value) {
@@ -274,11 +283,11 @@ export default {
       return !(isNaN(value) || !value || parseFloat(value) === 0);
     },
     async splitHandle(index) {
-      if (!process.env.WEB3_GANACHE && this.isRunning) {
+      if (!process.env.WEB3_GANACHE && this.users[index].isRunning) {
         return;
       }
 
-      this.isRunning = true;
+      this.users[index].isRunning = true;
       const receivers = this.users.filter((_, i) => i !== index);
       try {
         await this.splitterContract.methods
@@ -288,22 +297,23 @@ export default {
             value: this.toWei(this.users[index].valueSend)
           });
       } catch (error) {
-        this.isRunning = false;
+        this.users[index].isRunning = false;
         console.error(error);
       }
     },
     async withdrawHandle(index) {
-      if (!process.env.WEB3_GANACHE && this.isRunning) {
+      index += 1;
+      if (!process.env.WEB3_GANACHE && this.usersContract[index].isRunning) {
         return;
       }
 
-      this.isRunning = true;
+      this.usersContract[index].isRunning = true;
       try {
         await this.splitterContract.methods
           .withdraw()
-          .send({ from: this.usersContract[index + 1].account });
+          .send({ from: this.usersContract[index].account });
       } catch (error) {
-        this.isRunning = false;
+        this.usersContract[index].isRunning = false;
         console.log(error);
       }
     }
