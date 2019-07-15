@@ -17,7 +17,7 @@
                 </v-list>
               </v-flex>
               <v-flex>
-                <v-text-field placeholder="Some Ether" clearable v-model="users[index].valueSend"></v-text-field>
+                <v-text-field placeholder="Some Ether" clearable v-model="user.valueSend"></v-text-field>
               </v-flex>
               <v-flex>
                 <v-btn
@@ -25,7 +25,7 @@
                   large
                   v-bind:color="getColor(index).name"
                   @click="splitHandle(index)"
-                  :disabled="!validate(users[index].valueSend)"
+                  :disabled="!validateValue(user.valueSend) || !user.isEnabled"
                 >Split</v-btn>
               </v-flex>
             </v-layout>
@@ -51,17 +51,17 @@
               <v-flex>
                 <v-list two-line subheader>
                   <v-subheader>Accounts</v-subheader>
-                  <v-list-tile v-for="(info, index) in usersContract.slice(1)" :key="index">
+                  <v-list-tile v-for="(user, index) in usersContract.slice(1)" :key="index">
                     <v-list-tile-content>
-                      <v-list-tile-title>{{ info.account }}</v-list-tile-title>
-                      <v-list-tile-sub-title>{{ info.balance }} ETH</v-list-tile-sub-title>
+                      <v-list-tile-title>{{ user.account }}</v-list-tile-title>
+                      <v-list-tile-sub-title>{{ user.balance }} ETH</v-list-tile-sub-title>
                     </v-list-tile-content>
                     <v-btn
                       depressed
                       large
                       v-bind:color="getColor(index).name"
                       @click="withdrawHandle(index)"
-                      :disabled="!validate(info.balance)"
+                      :disabled="!validateValue(user.balance) || !user.isEnabled"
                     >Withdraw</v-btn>
                   </v-list-tile>
                 </v-list>
@@ -80,9 +80,6 @@
 
 <script>
 import Web3 from "web3";
-let web3 = new Web3(
-  "http://127.0.0.1:8545" // TODO: add staging and production on Ropsten
-);
 import splitterAbi from "../../../ethereum/build/contracts/Splitter.json";
 import { setInterval } from "timers";
 
@@ -90,20 +87,34 @@ import { setInterval } from "timers";
 export default {
   name: "Splitter",
   data: () => ({
+    accountsProvider: [
+      "0x672b39F0D2609a6FeC23358f4b8D8c92104BAF56",
+      "0x3F37278403BF4Fa7c2B8fa0D21Af353c554641A1",
+      "0x5D0af8790F21375C65A75C3822d75fEe75BfC649"
+    ],
+    web3: null,
     isRunning: false,
     owner: null,
     users: [],
     splitterContract: null,
-    contractAddr: "0xCfEB869F69431e42cdB54A4F4f105C19C080A601", // TODO: reaplce in env variable
+    contractAddr: process.env.WEB3_GANACHE
+      ? "0xCfEB869F69431e42cdB54A4F4f105C19C080A601"
+      : "0xB77E02c16d4a49fC54bA33FB6a86672D0daE152F", // TODO: can be reaplced
     usersContract: []
   }),
   async created() {
+    this.web3 = new Web3(
+      process.env.WEB3_GANACHE
+        ? "http://127.0.0.1:8545"
+        : window.web3.currentProvider
+    );
+
     await this.initContract();
     await this.initAccounts();
   },
   methods: {
     async initContract() {
-      this.splitterContract = new web3.eth.Contract(
+      this.splitterContract = new this.web3.eth.Contract(
         splitterAbi.abi,
         this.contractAddr,
         {
@@ -112,17 +123,24 @@ export default {
       );
 
       let accounts;
-      try {
-        accounts = await web3.eth.getAccounts();
-        accounts = accounts.slice(1, 4);
-      } catch (error) {
-        console.error(error);
+      if (process.env.WEB3_GANACHE) {
+        try {
+          accounts = await this.web3.eth.getAccounts();
+          accounts = accounts.slice(1, 4);
+        } catch (error) {
+          console.error(error);
+        }
+      } else {
+        accounts = this.accountsProvider;
       }
 
       let info = {
         account: this.contractAddr,
-        balance: this.toEther(await web3.eth.getBalance(this.contractAddr)),
-        isContract: true
+        balance: this.toEther(
+          await this.web3.eth.getBalance(this.contractAddr)
+        ),
+        isContract: true,
+        isEnabled: true
       };
       this.usersContract.push(info);
       for (const account of accounts) {
@@ -131,59 +149,68 @@ export default {
           balance: this.toEther(
             await this.splitterContract.methods
               .accounts(this.contractAddr)
-              .call({ from: this.owner })
+              .call()
           ),
-          isContract: false
+          isContract: false,
+          isEnabled: true
         };
         this.usersContract.push(info);
       }
 
-      // TODO:
       // "Error: Subscriptions are not supported with the HttpProvider."
       // https://github.com/trufflesuite/truffle/issues/1633
-      // this.splitterContract.events
-      //   .LogSplit(
-      //     {
-      //       fromBlock: "latest"
-      //     },
-      //     (error, event) => {
-      //       console.log(error, event);
-      //       // TODO: update users
-      //     }
-      //   )
-      //   .on("data", event => {
-      //     console.log(event);
-      //   })
-      //   .on("changed", event => {
-      //     console.log(event);
-      //   })
-      //   .on("error", console.error);
-      // this.splitterContract.events
-      //   .LogWithdraw(
-      //     {
-      //       fromBlock: "latest"
-      //     },
-      //     (error, event) => {
-      //       console.log(error, event);
-      //       // TODO: update users
-      //     }
-      //   )
-      //   .on("data", event => {
-      //     console.log(event);
-      //   })
-      //   .on("changed", event => {
-      //     console.log(event);
-      //   })
-      //   .on("error", console.error);
+      if (!process.env.WEB3_GANACHE) {
+        this.splitterContract.events
+          .LogSplit(
+            {
+              fromBlock: "latest"
+            },
+            (error, event) => {
+              this.isRunning = false;
+              this.updateUsers();
+              console.log(error, event);
+            }
+          )
+          .on("data", event => {
+            console.log(event);
+          })
+          .on("changed", event => {
+            console.log(event);
+          })
+          .on("error", console.error);
+
+        this.splitterContract.events
+          .LogWithdraw(
+            {
+              fromBlock: "latest"
+            },
+            (error, event) => {
+              this.updateUsers();
+              console.log(error, event);
+            }
+          )
+          .on("data", event => {
+            console.log(event);
+          })
+          .on("changed", event => {
+            console.log(event);
+          })
+          .on("error", console.error);
+      }
     },
     async initAccounts() {
       let accounts;
-      try {
-        accounts = await web3.eth.getAccounts();
-        this.owner = accounts[0];
-        accounts = accounts.slice(1, 4);
-      } catch (error) {
-        console.error(error);
+      if (process.env.WEB3_GANACHE) {
+        try {
+          accounts = await this.web3.eth.getAccounts();
+          // accounts[0] is owner of contract in ganache
+          accounts = accounts.slice(1, 4);
+          console.log(accounts);
+        } catch (error) {
+          console.error(error);
+        }
+      } else {
+        accounts = this.accountsProvider;
       }
 
       const names = ["Alice", "Bob", "Carol"];
@@ -192,8 +219,9 @@ export default {
           const user = {
             name: names[i],
             account: accounts[i],
-            balance: this.toEther(await web3.eth.getBalance(accounts[i])),
-            valueSend: 1
+            balance: this.toEther(await this.web3.eth.getBalance(accounts[i])),
+            valueSend: 1,
+            isEnabled: true
           };
           this.users.push(user);
         }
@@ -201,34 +229,38 @@ export default {
         console.log(error);
       }
 
-      // TODO: enable in dev mod only
-      // alternative solution for "Error: Subscriptions are not supported with the HttpProvider."
-      setInterval(() => {
-        this.updateInfo();
+      // alternative solution for "Error: Subscriptions are not supported with the HttpProvider." in ganache env
+      setInterval(async () => {
+        this.updateUsers();
       }, 1000);
     },
-    async updateInfo() {
-      for (const i in this.users) {
-        this.users[i].balance = this.toEther(
-          await web3.eth.getBalance(this.users[i].account)
+    async validateAccount(account) {
+      return process.env.WEB3_GANACHE
+        ? true
+        : account === (await this.web3.eth.getAccounts())[0];
+    },
+    async updateUsers() {
+      for (const user of this.users) {
+        user.balance = this.toEther(
+          await this.web3.eth.getBalance(user.account)
         );
+        user.isEnabled = await this.validateAccount(user.account);
       }
 
-      for (const info of this.usersContract) {
-        info.balance = !info.isContract
+      for (const user of this.usersContract) {
+        user.balance = !user.isContract
           ? this.toEther(
-              await this.splitterContract.methods
-                .accounts(info.account)
-                .call({ from: this.owner })
+              await this.splitterContract.methods.accounts(user.account).call()
             )
-          : this.toEther(await web3.eth.getBalance(info.account));
+          : this.toEther(await this.web3.eth.getBalance(user.account));
+        user.isEnabled = await this.validateAccount(user.account);
       }
     },
     toEther(value) {
-      return web3.utils.fromWei(String(value), "ether");
+      return this.web3.utils.fromWei(String(value), "ether");
     },
     toWei(value) {
-      return web3.utils.toWei(String(value), "ether");
+      return this.web3.utils.toWei(String(value), "ether");
     },
     getColor(index) {
       const colors = [
@@ -238,17 +270,16 @@ export default {
       ];
       return colors[index % colors.length];
     },
-    validate(value) {
+    validateValue(value) {
       return !(isNaN(value) || !value || parseFloat(value) === 0);
     },
     async splitHandle(index) {
-      // if (this.isRunning) {
-      //   return;
-      // }
+      if (!process.env.WEB3_GANACHE && this.isRunning) {
+        return;
+      }
 
+      this.isRunning = true;
       const receivers = this.users.filter((_, i) => i !== index);
-
-      // this.isRunning = true;
       try {
         await this.splitterContract.methods
           .split(receivers[0].account, receivers[1].account)
@@ -257,16 +288,22 @@ export default {
             value: this.toWei(this.users[index].valueSend)
           });
       } catch (error) {
+        this.isRunning = false;
         console.error(error);
       }
-      // this.isRunning = false;
     },
     async withdrawHandle(index) {
+      if (!process.env.WEB3_GANACHE && this.isRunning) {
+        return;
+      }
+
+      this.isRunning = true;
       try {
         await this.splitterContract.methods
           .withdraw()
           .send({ from: this.usersContract[index + 1].account });
       } catch (error) {
+        this.isRunning = false;
         console.log(error);
       }
     }
