@@ -54,7 +54,7 @@
                   <v-list-tile v-for="(user, index) in usersContract.slice(1)" :key="index">
                     <v-list-tile-content>
                       <v-list-tile-title>{{ user.account }}</v-list-tile-title>
-                      <v-list-tile-sub-title>{{ user.balance }} ETH {{String(user.isRunning)}}</v-list-tile-sub-title>
+                      <v-list-tile-sub-title>{{ user.balance }} ETH</v-list-tile-sub-title>
                     </v-list-tile-content>
                     <v-btn
                       depressed
@@ -79,8 +79,13 @@
 </template>
 
 <script>
-import Web3 from "web3";
-import splitterAbi from "../../../ethereum/build/contracts/Splitter.json";
+// import Web3 from "web3";
+import web3, {
+  validateNetwork,
+  getAccounts,
+  getContract,
+  isGanache
+} from "../Web3";
 import { setInterval } from "timers";
 
 /* eslint-disable no-console */
@@ -92,39 +97,28 @@ export default {
       "0x3F37278403BF4Fa7c2B8fa0D21Af353c554641A1",
       "0x5D0af8790F21375C65A75C3822d75fEe75BfC649"
     ],
-    web3: null,
     owner: null,
     users: [],
     splitterContract: null,
-    contractAddr: process.env.WEB3_GANACHE
-      ? "0xCfEB869F69431e42cdB54A4F4f105C19C080A601"
-      : "0xB77E02c16d4a49fC54bA33FB6a86672D0daE152F", // TODO: can be reaplced
     usersContract: []
   }),
   async created() {
-    this.web3 = new Web3(
-      process.env.WEB3_GANACHE
-        ? "http://127.0.0.1:8545"
-        : window.web3.currentProvider
-    );
-
+    if (!(await validateNetwork())) {
+      alert(`Please select your netowrk to ropsten`);
+      return;
+    }
     await this.initContract();
     await this.initAccounts();
   },
+  async mounted() {},
   methods: {
     async initContract() {
-      this.splitterContract = new this.web3.eth.Contract(
-        splitterAbi.abi,
-        this.contractAddr,
-        {
-          defaultGasPrice: "200000"
-        }
-      );
+      this.splitterContract = await getContract();
 
       let accounts;
-      if (process.env.WEB3_GANACHE) {
+      if (isGanache()) {
         try {
-          accounts = await this.web3.eth.getAccounts();
+          accounts = await web3.eth.getAccounts();
           accounts = accounts.slice(1, 4);
         } catch (error) {
           console.error(error);
@@ -134,9 +128,9 @@ export default {
       }
 
       let info = {
-        account: this.contractAddr,
+        account: this.splitterContract.address,
         balance: this.toEther(
-          await this.web3.eth.getBalance(this.contractAddr)
+          await web3.eth.getBalance(this.splitterContract.address)
         ),
         isContract: true,
         isEnabled: true,
@@ -148,7 +142,7 @@ export default {
           account,
           balance: this.toEther(
             await this.splitterContract.methods
-              .accounts(this.contractAddr)
+              .accounts(this.splitterContract.address)
               .call()
           ),
           isContract: false,
@@ -160,7 +154,7 @@ export default {
 
       // "Error: Subscriptions are not supported with the HttpProvider."
       // https://github.com/trufflesuite/truffle/issues/1633
-      if (!process.env.WEB3_GANACHE) {
+      if (!isGanache()) {
         this.splitterContract.events
           .LogSplit(
             {
@@ -205,18 +199,10 @@ export default {
       }
     },
     async initAccounts() {
-      let accounts;
-      if (process.env.WEB3_GANACHE) {
-        try {
-          accounts = await this.web3.eth.getAccounts();
-          // accounts[0] is owner of contract in ganache
-          accounts = accounts.slice(1, 4);
-          console.log(accounts);
-        } catch (error) {
-          console.error(error);
-        }
-      } else {
-        accounts = this.accountsProvider;
+      let accounts = await getAccounts();
+      // accounts[0] is owner of contract in ganache
+      if (isGanache()) {
+        accounts = accounts.slice(1, 4);
       }
 
       const names = ["Alice", "Bob", "Carol"];
@@ -225,7 +211,7 @@ export default {
           const user = {
             name: names[i],
             account: accounts[i],
-            balance: this.toEther(await this.web3.eth.getBalance(accounts[i])),
+            balance: this.toEther(await web3.eth.getBalance(accounts[i])),
             valueSend: 1,
             isEnabled: true,
             isRunning: false
@@ -242,15 +228,11 @@ export default {
       }, 1000);
     },
     async validateAccount(account) {
-      return process.env.WEB3_GANACHE
-        ? true
-        : account === (await this.web3.eth.getAccounts())[0];
+      return isGanache() ? true : account === (await web3.eth.getAccounts())[0];
     },
     async updateUsers(event = "") {
       for (const user of this.users) {
-        user.balance = this.toEther(
-          await this.web3.eth.getBalance(user.account)
-        );
+        user.balance = this.toEther(await web3.eth.getBalance(user.account));
         user.isEnabled = await this.validateAccount(user.account);
         user.isRunning = event === "split" ? false : user.isRunning;
       }
@@ -260,16 +242,16 @@ export default {
           ? this.toEther(
               await this.splitterContract.methods.accounts(user.account).call()
             )
-          : this.toEther(await this.web3.eth.getBalance(user.account));
+          : this.toEther(await web3.eth.getBalance(user.account));
         user.isEnabled = await this.validateAccount(user.account);
         user.isRunning = event === "withdraw" ? false : user.isRunning;
       }
     },
     toEther(value) {
-      return this.web3.utils.fromWei(String(value), "ether");
+      return web3.utils.fromWei(String(value), "ether");
     },
     toWei(value) {
-      return this.web3.utils.toWei(String(value), "ether");
+      return web3.utils.toWei(String(value), "ether");
     },
     getColor(index) {
       const colors = [
@@ -283,7 +265,7 @@ export default {
       return !(isNaN(value) || !value || parseFloat(value) === 0);
     },
     async splitHandle(index) {
-      if (!process.env.WEB3_GANACHE && this.users[index].isRunning) {
+      if (!isGanache() && this.users[index].isRunning) {
         return;
       }
 
@@ -303,7 +285,7 @@ export default {
     },
     async withdrawHandle(index) {
       index += 1;
-      if (!process.env.WEB3_GANACHE && this.usersContract[index].isRunning) {
+      if (!isGanache() && this.usersContract[index].isRunning) {
         return;
       }
 
