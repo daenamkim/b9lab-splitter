@@ -23,7 +23,7 @@
                 depressed
                 large
                 v-bind:color="getColor(index).name"
-                @click="splitEther(index)"
+                @click="splitHandle(index)"
               >Split</v-btn>
             </v-flex>
           </v-layout>
@@ -35,13 +35,13 @@
         <v-card dark hover>
           <v-card-title primary class="title">Deposit Info</v-card-title>
           <v-layout column padding>
-            <v-flex v-if="depositInfo.length > 0">
+            <v-flex v-if="usersContract.length > 0">
               <v-list two-line subheader>
                 <v-subheader>Contract</v-subheader>
                 <v-list-tile>
                   <v-list-tile-content>
-                    <v-list-tile-title>{{ depositInfo[0].account }}</v-list-tile-title>
-                    <v-list-tile-sub-title>{{depositInfo[0].balance}} ETH</v-list-tile-sub-title>
+                    <v-list-tile-title>{{ usersContract[0].account }}</v-list-tile-title>
+                    <v-list-tile-sub-title>{{usersContract[0].balance}} ETH</v-list-tile-sub-title>
                   </v-list-tile-content>
                 </v-list-tile>
               </v-list>
@@ -49,12 +49,12 @@
             <v-flex>
               <v-list two-line subheader>
                 <v-subheader>Accounts</v-subheader>
-                <v-list-tile v-for="(info, index) in depositInfo.slice(1)" :key="index">
+                <v-list-tile v-for="(info, index) in usersContract.slice(1)" :key="index">
                   <v-list-tile-content>
                     <v-list-tile-title>{{ info.account }}</v-list-tile-title>
                     <v-list-tile-sub-title>{{ info.balance }} ETH</v-list-tile-sub-title>
                   </v-list-tile-content>
-                  <v-btn depressed large v-bind:color="getColor(index)">Withdraw</v-btn>
+                  <v-btn depressed large v-bind:color="getColor(index).name">Withdraw</v-btn>
                 </v-list-tile>
               </v-list>
             </v-flex>
@@ -79,11 +79,10 @@ export default {
   data: () => ({
     isRunning: false,
     owner: null,
-    accounts: [],
     users: [],
     splitterContract: null,
     contractAddr: "0xCfEB869F69431e42cdB54A4F4f105C19C080A601", // TODO: reaplce in env variable
-    depositInfo: []
+    usersContract: []
   }),
   async created() {
     await this.initContract();
@@ -112,7 +111,7 @@ export default {
         balance: this.toEther(await web3.eth.getBalance(this.contractAddr)),
         isContract: true
       };
-      this.depositInfo.push(info);
+      this.usersContract.push(info);
       for (const account of accounts) {
         info = {
           account,
@@ -123,7 +122,7 @@ export default {
           ),
           isContract: false
         };
-        this.depositInfo.push(info);
+        this.usersContract.push(info);
       }
 
       // TODO:
@@ -196,8 +195,20 @@ export default {
       }, 1000);
     },
     async updateInfo() {
-      for (const user of this.users) {
-        user.balance = this.toEther(await web3.eth.getBalance(user.account));
+      for (const i in this.users) {
+        this.users[i].balance = this.toEther(
+          await web3.eth.getBalance(this.users[i].account)
+        );
+      }
+
+      for (const info of this.usersContract) {
+        info.balance = !info.isContract
+          ? this.toEther(
+              await this.splitterContract.methods
+                .accounts(info.account)
+                .call({ from: this.owner })
+            )
+          : this.toEther(await web3.eth.getBalance(info.account));
       }
     },
     toEther(value) {
@@ -214,22 +225,27 @@ export default {
       ];
       return colors[index % colors.length];
     },
-    async splitEther(index) {
+    async splitHandle(index) {
       // if (this.isRunning) {
       //   return;
       // }
 
+      const receivers = this.users.filter((_, i) => i !== index);
+
       // this.isRunning = true;
       try {
-        await this.splitterContract.methods.splitEther().send({
-          from: this.users[index].account,
-          value: this.toWei(this.users[index].valueSend)
-        });
+        await this.splitterContract.methods
+          .split(receivers[0].account, receivers[1].account)
+          .send({
+            from: this.users[index].account,
+            value: this.toWei(this.users[index].valueSend)
+          });
       } catch (error) {
         console.error(error);
       }
       // this.isRunning = false;
-    }
+    },
+    async withdrawHandle(index) {}
   }
 };
 </script>
