@@ -1,75 +1,81 @@
 <template>
-  <v-container fluid>
-    <v-layout text-xs-center justify-center row wrap>
-      <v-flex xs12 md8 lg3 v-for="(user, index) in users" :key="index" padding>
-        <v-card v-bind:color="getColor(index).name" dark hover>
-          <v-card-title primary class="title">{{ user.name }}</v-card-title>
-          <v-layout align-center justify-center column>
-            <v-flex>
-              <v-list two-line :style="{'background-color': getColor(index).code}">
-                <v-list-tile>
-                  <v-list-tile-content>
-                    <v-list-tile-title>{{ user.account }}</v-list-tile-title>
-                    <v-list-tile-sub-title>{{ user.balance }} ETH</v-list-tile-sub-title>
-                  </v-list-tile-content>
-                </v-list-tile>
-              </v-list>
-            </v-flex>
-            <v-flex>
-              <v-text-field placeholder="Some Ether" clearable v-model="users[index].valueSend"></v-text-field>
-            </v-flex>
-            <v-flex>
-              <v-btn
-                depressed
-                large
-                v-bind:color="getColor(index).name"
-                @click="splitHandle(index)"
-                :disabled="!validate(users[index].valueSend)"
-              >Split</v-btn>
-            </v-flex>
-          </v-layout>
-        </v-card>
-      </v-flex>
-    </v-layout>
-    <v-layout text-xs-center justify-center row wrap>
-      <v-flex xs12 md8 lg9 padding>
-        <v-card dark hover>
-          <v-card-title primary class="title">Deposit Info</v-card-title>
-          <v-layout column padding>
-            <v-flex v-if="usersContract.length > 0">
-              <v-list two-line subheader>
-                <v-subheader>Contract</v-subheader>
-                <v-list-tile>
-                  <v-list-tile-content>
-                    <v-list-tile-title>{{ usersContract[0].account }}</v-list-tile-title>
-                    <v-list-tile-sub-title>{{usersContract[0].balance}} ETH</v-list-tile-sub-title>
-                  </v-list-tile-content>
-                </v-list-tile>
-              </v-list>
-            </v-flex>
-            <v-flex>
-              <v-list two-line subheader>
-                <v-subheader>Accounts</v-subheader>
-                <v-list-tile v-for="(info, index) in usersContract.slice(1)" :key="index">
-                  <v-list-tile-content>
-                    <v-list-tile-title>{{ info.account }}</v-list-tile-title>
-                    <v-list-tile-sub-title>{{ info.balance }} ETH</v-list-tile-sub-title>
-                  </v-list-tile-content>
-                  <v-btn
-                    depressed
-                    large
-                    v-bind:color="getColor(index).name"
-                    @click="withdrawHandle(index)"
-                    :disabled="!validate(info.balance)"
-                  >Withdraw</v-btn>
-                </v-list-tile>
-              </v-list>
-            </v-flex>
-          </v-layout>
-        </v-card>
-      </v-flex>
-    </v-layout>
-  </v-container>
+  <div>
+    <v-container fluid>
+      <v-layout text-xs-center justify-center row wrap>
+        <v-flex xs12 md8 lg3 v-for="(user, index) in users" :key="index" padding>
+          <v-card v-bind:color="getColor(index).name" dark hover>
+            <v-card-title primary class="title">{{ user.name }}</v-card-title>
+            <v-layout align-center justify-center column>
+              <v-flex>
+                <v-list two-line :style="{'background-color': getColor(index).code}">
+                  <v-list-tile>
+                    <v-list-tile-content>
+                      <v-list-tile-title>{{ user.account }}</v-list-tile-title>
+                      <v-list-tile-sub-title>{{ user.balance }} ETH</v-list-tile-sub-title>
+                    </v-list-tile-content>
+                  </v-list-tile>
+                </v-list>
+              </v-flex>
+              <v-flex>
+                <v-text-field placeholder="Some Ether" clearable v-model="users[index].valueSend"></v-text-field>
+              </v-flex>
+              <v-flex>
+                <v-btn
+                  depressed
+                  large
+                  v-bind:color="getColor(index).name"
+                  @click="splitHandle(index)"
+                  :disabled="!validate(users[index].valueSend)"
+                >Split</v-btn>
+              </v-flex>
+            </v-layout>
+          </v-card>
+        </v-flex>
+      </v-layout>
+      <v-layout text-xs-center justify-center row wrap>
+        <v-flex xs12 md8 lg9 padding>
+          <v-card dark hover>
+            <v-card-title primary class="title">Deposit Info</v-card-title>
+            <v-layout column padding>
+              <v-flex v-if="usersContract.length > 0">
+                <v-list two-line subheader>
+                  <v-subheader>Contract</v-subheader>
+                  <v-list-tile>
+                    <v-list-tile-content>
+                      <v-list-tile-title>{{ usersContract[0].account }}</v-list-tile-title>
+                      <v-list-tile-sub-title>{{usersContract[0].balance}} ETH</v-list-tile-sub-title>
+                    </v-list-tile-content>
+                  </v-list-tile>
+                </v-list>
+              </v-flex>
+              <v-flex>
+                <v-list two-line subheader>
+                  <v-subheader>Accounts</v-subheader>
+                  <v-list-tile v-for="(info, index) in usersContract.slice(1)" :key="index">
+                    <v-list-tile-content>
+                      <v-list-tile-title>{{ info.account }}</v-list-tile-title>
+                      <v-list-tile-sub-title>{{ info.balance }} ETH</v-list-tile-sub-title>
+                    </v-list-tile-content>
+                    <v-btn
+                      depressed
+                      large
+                      v-bind:color="getColor(index).name"
+                      @click="withdrawHandle(index)"
+                      :disabled="!validate(info.balance)"
+                    >Withdraw</v-btn>
+                  </v-list-tile>
+                </v-list>
+              </v-flex>
+            </v-layout>
+          </v-card>
+        </v-flex>
+      </v-layout>
+    </v-container>
+    <v-footer class="pa-3">
+      <v-spacer></v-spacer>
+      <div>Daenam Kim, BLOCKSTARS-ETH-2 of B9lab 2019</div>
+    </v-footer>
+  </div>
 </template>
 
 <script>
