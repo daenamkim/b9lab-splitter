@@ -4,7 +4,7 @@
   "license": "MIT",
   "scripts": {
     "serve:ganache:eth": "cd ../ethereum && ./stop-ganache.sh && ./start-ganache.sh && yarn truffle deploy",
-    "serve:ganache:": "WEB3_GANACHE=true vue-cli-service serve",
+    "serve:ganache": "WEB3_GANACHE=true vue-cli-service serve",
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint"
