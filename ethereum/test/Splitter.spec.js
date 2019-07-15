@@ -106,7 +106,7 @@ contract('Splitter', accounts => {
     }
 
     assert.equal(
-      (await splitterInstance.getContractBalance({ from: owner })).toString(),
+      (await web3.eth.getBalance(splitterInstance.address)).toString(),
       value
     );
   });

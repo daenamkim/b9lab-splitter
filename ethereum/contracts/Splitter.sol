@@ -31,8 +31,4 @@ contract Splitter is Pausable {
 
     emit LogWithdraw(msg.sender);
   }
-
-  function getContractBalance() public view returns (uint) {
-    return address(this).balance;
-  }
 }
