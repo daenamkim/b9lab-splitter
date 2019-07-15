@@ -54,7 +54,12 @@
                     <v-list-tile-title>{{ info.account }}</v-list-tile-title>
                     <v-list-tile-sub-title>{{ info.balance }} ETH</v-list-tile-sub-title>
                   </v-list-tile-content>
-                  <v-btn depressed large v-bind:color="getColor(index).name">Withdraw</v-btn>
+                  <v-btn
+                    depressed
+                    large
+                    v-bind:color="getColor(index).name"
+                    @click="withdrawHandle(index)"
+                  >Withdraw</v-btn>
                 </v-list-tile>
               </v-list>
             </v-flex>
@@ -245,7 +250,15 @@ export default {
       }
       // this.isRunning = false;
     },
-    async withdrawHandle(index) {}
+    async withdrawHandle(index) {
+      try {
+        await this.splitterContract.methods
+          .withdraw()
+          .send({ from: this.usersContract[index + 1].account });
+      } catch (error) {
+        console.log(error);
+      }
+    }
   }
 };
 </script>
