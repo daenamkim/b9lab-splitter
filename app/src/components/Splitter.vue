@@ -269,7 +269,7 @@ export default {
         return;
       }
 
-      this.users[index].isRunning = true;
+      this.users[index].isRunning = isGanache() ? false : true;
       const receivers = this.users.filter((_, i) => i !== index);
       try {
         await this.splitterContract.methods
@@ -289,7 +289,7 @@ export default {
         return;
       }
 
-      this.usersContract[index].isRunning = true;
+      this.usersContract[index].isRunning = isGanache() ? false : true;
       try {
         await this.splitterContract.methods
           .withdraw()
