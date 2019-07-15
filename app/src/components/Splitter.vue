@@ -24,6 +24,7 @@
                 large
                 v-bind:color="getColor(index).name"
                 @click="splitHandle(index)"
+                :disabled="!validate(users[index].valueSend)"
               >Split</v-btn>
             </v-flex>
           </v-layout>
@@ -59,6 +60,7 @@
                     large
                     v-bind:color="getColor(index).name"
                     @click="withdrawHandle(index)"
+                    :disabled="!validate(info.balance)"
                   >Withdraw</v-btn>
                 </v-list-tile>
               </v-list>
@@ -229,6 +231,9 @@ export default {
         { name: "green lighten-2", code: "#81c784" }
       ];
       return colors[index % colors.length];
+    },
+    validate(value) {
+      return !(isNaN(value) || !value || parseFloat(value) === 0);
     },
     async splitHandle(index) {
       // if (this.isRunning) {
