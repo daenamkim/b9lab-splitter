@@ -38,6 +38,12 @@ export const getAccounts = async () => {
       ];
 };
 
-export const isHost = name => {
-  return web3.eth.net.currentProvider === name ? true : false;
+export const hosts = {
+  GANACHE: 'http://127.0.0.1',
+  METAMASK: 'metamask',
+  ROPSTEN: 'https://ropsten.infura.io'
+};
+
+export const isHost = host => {
+  return web3.eth.net.currentProvider.host.indexOf(host) > -1 ? true : false;
 };
