@@ -11,18 +11,24 @@ contract('Splitter', accounts => {
   let bob;
   let carol;
   let splitterInstance;
+  let gasPrice;
+  let gas; // gas limit
   beforeEach(async () => {
     owner = accounts[0];
     alice = accounts[1];
     bob = accounts[2];
     carol = accounts[3];
     splitterInstance = await artifacts.require('Splitter.sol').new();
+    gasPrice = web3.utils.toWei('2', 'gwei'); // normal speed (slow: 1 gwei, fast: 8 gwei)
+    gas = '100000';
   });
   it('should not split value if msg.value is smaller than 1', async () => {
     try {
       await splitterInstance.split(bob, carol, {
-        value: 0,
-        from: alice
+        from: alice,
+        value: '0',
+        gasPrice,
+        gas
       });
       assert.fail();
     } catch (error) {
@@ -33,7 +39,9 @@ contract('Splitter', accounts => {
     try {
       await splitterInstance.split(bob, {
         from: alice,
-        value: '100'
+        value: '100',
+        gasPrice,
+        gas
       });
     } catch (error) {
       assert.equal(error.reason, 'invalid address');
@@ -42,7 +50,9 @@ contract('Splitter', accounts => {
     try {
       await splitterInstance.split(bob, 0, {
         from: alice,
-        value: '100'
+        value: '100',
+        gasPrice,
+        gas
       });
     } catch (error) {
       assert.equal(error.reason, 'invalid address');
@@ -54,7 +64,9 @@ contract('Splitter', accounts => {
         '0x0000000000000000000000000000000000000000',
         {
           from: alice,
-          value: '100'
+          value: '100',
+          gasPrice,
+          gas
         }
       );
     } catch (error) {
@@ -64,33 +76,23 @@ contract('Splitter', accounts => {
   it('should not split value if a sender is one of receivers', async () => {
     try {
       await splitterInstance.split(alice, carol, {
+        from: alice,
         value: '100',
-        from: alice
+        gasPrice,
+        gas
       });
       assert.fail();
     } catch (error) {
       assert.equal(error.reason, 'A sender should not be one of receivers');
     }
   });
-  // TODO:
-  // it('should not split value if value is too big', async () => {
-  //   try {
-  //     await splitterInstance.split(alice, carol, {
-  //       value:
-  //         '0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF',
-  //       from: alice
-  //     });
-  //     assert.fail();
-  //   } catch (error) {
-  //     console.log(error);
-  //     assert.equal(error.reason, 'A value is too big');
-  //   }
-  // });
   it('should store divided value to each other and remainder to sender back', async () => {
     const value = '11';
     await splitterInstance.split(bob, carol, {
       from: alice,
-      value
+      value,
+      gasPrice,
+      gas
     });
 
     const expected = {};
@@ -112,27 +114,61 @@ contract('Splitter', accounts => {
   });
   it('should not allow to withdraw when account balance is 0', async () => {
     try {
-      await splitterInstance.withdraw({ from: bob });
+      await splitterInstance.withdraw({
+        from: bob,
+        gasPrice,
+        gas
+      });
       assert.fail();
     } catch (error) {
       assert.equal(error.reason, 'A requested account should have balance');
     }
   });
   it('should withdraw value to address', async () => {
-    await splitterInstance.split(bob, carol, {
+    const balanceBefore = await web3.eth.getBalance(alice);
+    const value = web3.utils.toWei('30', 'ether');
+    const tx = await splitterInstance.split(bob, carol, {
       from: alice,
-      value: web3.utils.toWei('30', 'ether')
+      value,
+      gasPrice,
+      gas
     });
+
+    const balanceNow = await web3.eth.getBalance(alice);
+    const expectedGasUsed = 73437;
+    assert.equal(tx.receipt.gasUsed, expectedGasUsed);
+    assert.equal(
+      balanceNow,
+      BigNumber(balanceBefore)
+        .subtract(BigNumber(expectedGasUsed).multiply(BigNumber(gasPrice)))
+        .subtract(BigNumber(value))
+        .toString()
+    );
 
     const accountsBefore = {};
     accountsBefore[bob] = await web3.eth.getBalance(bob);
     accountsBefore[carol] = await web3.eth.getBalance(carol);
     for (const key in accountsBefore) {
-      await splitterInstance.withdraw({ from: key });
-      // ganache provider doesn't support event catch but it was OK without delay
+      const tx = await splitterInstance.withdraw({
+        from: key,
+        gasPrice,
+        gas
+      });
+
+      const balanceNow = await web3.eth.getBalance(key);
+      const expectedGasUsed = 21007;
+      assert.equal(tx.receipt.gasUsed, expectedGasUsed);
+      assert.equal(
+        balanceNow,
+        BigNumber(accountsBefore[key])
+          .add(BigNumber(value).divide(2))
+          .subtract(BigNumber(expectedGasUsed).multiply(BigNumber(gasPrice)))
+          .toString()
+      );
+
+      // ganache provider doesn't support event catch but it is OK there is no delay
       const actual = await web3.eth.getBalance(key);
       assert.notEqual(actual, accountsBefore[key]);
-      assert.isTrue(BigNumber(actual).gt(accountsBefore[key]));
     }
   });
 });

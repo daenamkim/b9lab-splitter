@@ -18,9 +18,7 @@ const web3 = new Web3(
 export default web3;
 
 export const getContract = () => {
-  return new web3.eth.Contract(splitterAbi.abi, CONTRACT_ADDR, {
-    defaultGasPrice: '200000'
-  });
+  return new web3.eth.Contract(splitterAbi.abi, CONTRACT_ADDR);
 };
 
 export const validateNetwork = async () => {
