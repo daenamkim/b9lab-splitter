@@ -10,8 +10,11 @@ const CONTRACT_ADDR =
 const web3 = new Web3(
   process.env.NODE_ENV === 'ganache'
     ? 'http://127.0.0.1:8545'
-    : window.web3.currentProvider
+    : window.web3
+    ? window.web3.currentProvider
+    : `https://ropsten.infura.io/v3/${process.env.VUE_APP_INFURA_API_KEY}`
 );
+
 export default web3;
 
 export const getContract = () => {
@@ -37,6 +40,6 @@ export const getAccounts = async () => {
       ];
 };
 
-export const isGanache = () => {
-  return process.env.NODE_ENV === 'ganache' ? true : false;
+export const isHost = name => {
+  return web3.eth.net.currentProvider === name ? true : false;
 };

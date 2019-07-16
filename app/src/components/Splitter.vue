@@ -84,7 +84,7 @@ import web3, {
   validateNetwork,
   getAccounts,
   getContract,
-  isGanache
+  isHost
 } from "../Web3";
 import { setInterval } from "timers";
 
@@ -116,7 +116,7 @@ export default {
       this.splitterContract = await getContract();
 
       let accounts;
-      if (isGanache()) {
+      if (isHost("ganache")) {
         try {
           accounts = await web3.eth.getAccounts();
           accounts = accounts.slice(1, 4);
@@ -154,7 +154,7 @@ export default {
 
       // "Error: Subscriptions are not supported with the HttpProvider."
       // https://github.com/trufflesuite/truffle/issues/1633
-      if (!isGanache()) {
+      if (isHost("metamask")) {
         this.splitterContract.events
           .LogSplit(
             {
@@ -201,7 +201,7 @@ export default {
     async initAccounts() {
       let accounts = await getAccounts();
       // accounts[0] is owner of contract in ganache
-      if (isGanache()) {
+      if (isHost("ganache")) {
         accounts = accounts.slice(1, 4);
       }
 
@@ -228,7 +228,9 @@ export default {
       }, 1000);
     },
     async validateAccount(account) {
-      return isGanache() ? true : account === (await web3.eth.getAccounts())[0];
+      return isHost("ganache")
+        ? true
+        : account === (await web3.eth.getAccounts())[0];
     },
     async updateUsers(event = "") {
       for (const user of this.users) {
@@ -265,11 +267,11 @@ export default {
       return !(isNaN(value) || !value || parseFloat(value) === 0);
     },
     async splitHandle(index) {
-      if (!isGanache() && this.users[index].isRunning) {
+      if (!isHost("ganache") && this.users[index].isRunning) {
         return;
       }
 
-      this.users[index].isRunning = isGanache() ? false : true;
+      this.users[index].isRunning = isHost("ganache") ? false : true;
       const receivers = this.users.filter((_, i) => i !== index);
       try {
         await this.splitterContract.methods
@@ -285,11 +287,11 @@ export default {
     },
     async withdrawHandle(index) {
       index += 1;
-      if (!isGanache() && this.usersContract[index].isRunning) {
+      if (!isHost("ganache") && this.usersContract[index].isRunning) {
         return;
       }
 
-      this.usersContract[index].isRunning = isGanache() ? false : true;
+      this.usersContract[index].isRunning = isHost("ganache") ? false : true;
       try {
         await this.splitterContract.methods
           .withdraw()
