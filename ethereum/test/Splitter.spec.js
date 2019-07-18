@@ -1,4 +1,5 @@
 const BigNumber = require('big-number');
+const truffleAssert = require('truffle-assertions');
 
 contract('Splitter', accounts => {
   let owner, alice, bob, carol;
@@ -15,43 +16,39 @@ contract('Splitter', accounts => {
     splitterInstance = await artifacts.require('Splitter.sol').new();
   });
   it('should not split value if msg.value is smaller than 1', async () => {
-    try {
-      await splitterInstance.split(bob, carol, {
+    await truffleAssert.fails(
+      splitterInstance.split(bob, carol, {
         from: alice,
         value: '0',
         gasPrice,
         gas
-      });
-      assert.fail();
-    } catch (error) {
-      assert.equal(error.reason, 'A given value should be bigger than 0');
-    }
+      }),
+      'A given value should be bigger than 0'
+    );
   });
   it('should not split value if a receiver address is empty', async () => {
-    try {
-      await splitterInstance.split(bob, {
+    await truffleAssert.fails(
+      splitterInstance.split(bob, {
         from: alice,
         value: '100',
         gasPrice,
         gas
-      });
-    } catch (error) {
-      assert.equal(error.reason, 'invalid address');
-    }
+      }),
+      'invalid address'
+    );
 
-    try {
-      await splitterInstance.split(bob, 0, {
+    await truffleAssert.fails(
+      splitterInstance.split(bob, 0, {
         from: alice,
         value: '100',
         gasPrice,
         gas
-      });
-    } catch (error) {
-      assert.equal(error.reason, 'invalid address');
-    }
+      }),
+      'invalid address'
+    );
 
-    try {
-      await splitterInstance.split(
+    await truffleAssert.fails(
+      splitterInstance.split(
         bob,
         '0x0000000000000000000000000000000000000000',
         {
@@ -60,23 +57,20 @@ contract('Splitter', accounts => {
           gasPrice,
           gas
         }
-      );
-    } catch (error) {
-      assert.equal(error.reason, 'A receiver should not be 0x');
-    }
+      ),
+      'A receiver should not be 0x'
+    );
   });
   it('should not split value if a sender is one of receivers', async () => {
-    try {
-      await splitterInstance.split(alice, carol, {
+    await truffleAssert.fails(
+      splitterInstance.split(alice, carol, {
         from: alice,
         value: '100',
         gasPrice,
         gas
-      });
-      assert.fail();
-    } catch (error) {
-      assert.equal(error.reason, 'A sender should not be one of receivers');
-    }
+      }),
+      'A sender should not be one of receivers'
+    );
   });
   it('should store divided value to each other and remainder to sender back', async () => {
     const value = '11';
@@ -93,28 +87,26 @@ contract('Splitter', accounts => {
     expected[carol] = '5';
 
     for (const key in expected) {
-      assert.equal(
+      assert.strictEqual(
         (await splitterInstance.accounts(key, { from: owner })).toString(),
         expected[key]
       );
     }
 
-    assert.equal(
+    assert.strictEqual(
       (await web3.eth.getBalance(splitterInstance.address)).toString(),
       value
     );
   });
   it('should not allow to withdraw when account balance is 0', async () => {
-    try {
-      await splitterInstance.withdraw({
+    await truffleAssert.fails(
+      splitterInstance.withdraw({
         from: bob,
         gasPrice,
         gas
-      });
-      assert.fail();
-    } catch (error) {
-      assert.equal(error.reason, 'A requested account should have balance');
-    }
+      }),
+      'A requested account should have balance'
+    );
   });
   it('should withdraw value to address', async () => {
     const balanceBefore = await web3.eth.getBalance(alice);
@@ -128,8 +120,8 @@ contract('Splitter', accounts => {
 
     const balanceNow = await web3.eth.getBalance(alice);
     const expectedGasUsed = 73716;
-    assert.equal(tx.receipt.gasUsed, expectedGasUsed);
-    assert.equal(
+    assert.strictEqual(tx.receipt.gasUsed, expectedGasUsed);
+    assert.strictEqual(
       balanceNow,
       BigNumber(balanceBefore)
         .subtract(BigNumber(expectedGasUsed).multiply(BigNumber(gasPrice)))
@@ -149,8 +141,8 @@ contract('Splitter', accounts => {
 
       const balanceNow = await web3.eth.getBalance(key);
       const expectedGasUsed = 21089;
-      assert.equal(tx.receipt.gasUsed, expectedGasUsed);
-      assert.equal(
+      assert.strictEqual(tx.receipt.gasUsed, expectedGasUsed);
+      assert.strictEqual(
         balanceNow,
         BigNumber(accountsBefore[key])
           .add(BigNumber(value).divide(2))
