@@ -8,7 +8,7 @@ contract Splitter is Pausable {
   event LogSplit(address indexed from, uint value, address indexed receiver1, address indexed receiver2);
   event LogWithdraw(address indexed requester);
 
-  function split(address payable receiver1, address payable receiver2) public payable whenNotPaused {
+  function split(address receiver1, address receiver2) public payable whenNotPaused {
     require(msg.value > 0, 'A given value should be bigger than 0');
     require(receiver1 != address(0) && receiver2 != address(0), 'A receiver should not be 0x');
     require(msg.sender != receiver1 && msg.sender != receiver2, 'A sender should not be one of receivers');
