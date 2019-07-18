@@ -5,8 +5,8 @@ import './Pausable.sol';
 contract Splitter is Pausable {
   mapping(address => uint) public accounts;
 
-  event LogSplit(address from, uint value, address receiver1, address receiver2);
-  event LogWithdraw(address requester);
+  event LogSplit(address indexed from, uint value, address indexed receiver1, address indexed receiver2);
+  event LogWithdraw(address indexed requester);
 
   function split(address payable receiver1, address payable receiver2) public payable whenNotPaused {
     require(msg.value > 0, 'A given value should be bigger than 0');
