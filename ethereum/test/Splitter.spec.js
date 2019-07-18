@@ -6,7 +6,7 @@ contract('Splitter', accounts => {
   const gasPrice = web3.utils.toWei('2', 'gwei'); // normal speed (slow: 1 gwei, fast: 8 gwei);
   const gas = '100000'; // gas limit
   before(async () => {
-    assert.isTrue(accounts.length > 3, 'The number of accounts is 4 at least');
+    assert.isAbove(accounts.length, 3, 'The number of accounts is 4 at least');
   });
 
   let splitterInstance;
@@ -121,7 +121,7 @@ contract('Splitter', accounts => {
 
     const balanceNow = await web3.eth.getBalance(alice);
     const expectedGasUsed = 73716;
-    assert.strictEqual(tx.receipt.gasUsed, expectedGasUsed);
+    assert.isBelow(tx.receipt.gasUsed, expectedGasUsed * 1.1);
     assert.strictEqual(
       balanceNow,
       BigNumber(balanceBefore)
@@ -152,7 +152,7 @@ contract('Splitter', accounts => {
 
       const balanceNow = await web3.eth.getBalance(key);
       const expectedGasUsed = 21089;
-      assert.strictEqual(tx.receipt.gasUsed, expectedGasUsed);
+      assert.isBelow(tx.receipt.gasUsed, expectedGasUsed * 1.1);
       assert.strictEqual(
         balanceNow,
         BigNumber(balancesBefore[key])
