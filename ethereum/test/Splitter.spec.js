@@ -13,7 +13,9 @@ contract('Splitter', accounts => {
     gas = '100000';
   });
   beforeEach(async () => {
-    splitterInstance = await artifacts.require('Splitter.sol').new();
+    splitterInstance = await artifacts
+      .require('Splitter.sol')
+      .new({ from: owner });
   });
   it('should not split value if msg.value is smaller than 1', async () => {
     await truffleAssert.fails(
