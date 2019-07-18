@@ -1,24 +1,18 @@
 const BigNumber = require('big-number');
 
 contract('Splitter', accounts => {
-  let owner;
-  let alice;
-  let bob;
-  let carol;
+  let owner, alice, bob, carol;
   let splitterInstance;
   let gasPrice;
   let gas; // gas limit
   before(async () => {
     assert.isTrue(accounts.length > 3, 'The number of accounts is 4 at least');
-  });
-  beforeEach(async () => {
-    owner = accounts[0];
-    alice = accounts[1];
-    bob = accounts[2];
-    carol = accounts[3];
-    splitterInstance = await artifacts.require('Splitter.sol').new();
+    [owner, alice, bob, carol] = accounts;
     gasPrice = web3.utils.toWei('2', 'gwei'); // normal speed (slow: 1 gwei, fast: 8 gwei)
     gas = '100000';
+  });
+  beforeEach(async () => {
+    splitterInstance = await artifacts.require('Splitter.sol').new();
   });
   it('should not split value if msg.value is smaller than 1', async () => {
     try {
