@@ -135,7 +135,7 @@ contract('Splitter', accounts => {
     });
 
     const balanceNow = await web3.eth.getBalance(alice);
-    const expectedGasUsed = 73437;
+    const expectedGasUsed = 73716;
     assert.equal(tx.receipt.gasUsed, expectedGasUsed);
     assert.equal(
       balanceNow,
@@ -156,7 +156,7 @@ contract('Splitter', accounts => {
       });
 
       const balanceNow = await web3.eth.getBalance(key);
-      const expectedGasUsed = 21007;
+      const expectedGasUsed = 21089;
       assert.equal(tx.receipt.gasUsed, expectedGasUsed);
       assert.equal(
         balanceNow,
