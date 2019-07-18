@@ -108,7 +108,7 @@ contract('Splitter', accounts => {
       'A requested account should have balance'
     );
   });
-  it('should withdraw value to address', async () => {
+  it('should call split of the contract', async () => {
     const balanceBefore = await web3.eth.getBalance(alice);
     const value = web3.utils.toWei('30', 'ether');
     const tx = await splitterInstance.split(bob, carol, {
@@ -128,6 +128,15 @@ contract('Splitter', accounts => {
         .subtract(BigNumber(value))
         .toString()
     );
+  });
+  it('should withdraw value to address', async () => {
+    const value = web3.utils.toWei('30', 'ether');
+    await splitterInstance.split(bob, carol, {
+      from: alice,
+      value,
+      gasPrice,
+      gas
+    });
 
     const balancesBefore = {};
     balancesBefore[bob] = await web3.eth.getBalance(bob);
