@@ -2,16 +2,14 @@ const BigNumber = require('big-number');
 const truffleAssert = require('truffle-assertions');
 
 contract('Splitter', accounts => {
-  let owner, alice, bob, carol;
-  let splitterInstance;
-  let gasPrice;
-  let gas; // gas limit
+  const [owner, alice, bob, carol] = accounts;
+  const gasPrice = web3.utils.toWei('2', 'gwei'); // normal speed (slow: 1 gwei, fast: 8 gwei);
+  const gas = '100000'; // gas limit
   before(async () => {
     assert.isTrue(accounts.length > 3, 'The number of accounts is 4 at least');
-    [owner, alice, bob, carol] = accounts;
-    gasPrice = web3.utils.toWei('2', 'gwei'); // normal speed (slow: 1 gwei, fast: 8 gwei)
-    gas = '100000';
   });
+
+  let splitterInstance;
   beforeEach(async () => {
     splitterInstance = await artifacts
       .require('Splitter.sol')
