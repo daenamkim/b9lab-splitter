@@ -1,11 +1,6 @@
 const BigNumber = require('big-number');
 
 contract('Splitter', accounts => {
-  if (!accounts || accounts.length < 4) {
-    console.error('Insufficient number of accounts');
-    return;
-  }
-
   let owner;
   let alice;
   let bob;
@@ -13,6 +8,9 @@ contract('Splitter', accounts => {
   let splitterInstance;
   let gasPrice;
   let gas; // gas limit
+  before(async () => {
+    assert.isTrue(accounts.length > 3, 'The number of accounts is 4 at least');
+  });
   beforeEach(async () => {
     owner = accounts[0];
     alice = accounts[1];
