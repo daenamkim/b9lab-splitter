@@ -129,10 +129,10 @@ contract('Splitter', accounts => {
         .toString()
     );
 
-    const accountsBefore = {};
-    accountsBefore[bob] = await web3.eth.getBalance(bob);
-    accountsBefore[carol] = await web3.eth.getBalance(carol);
-    for (const key in accountsBefore) {
+    const balancesBefore = {};
+    balancesBefore[bob] = await web3.eth.getBalance(bob);
+    balancesBefore[carol] = await web3.eth.getBalance(carol);
+    for (const key in balancesBefore) {
       const tx = await splitterInstance.withdraw({
         from: key,
         gasPrice,
@@ -144,7 +144,7 @@ contract('Splitter', accounts => {
       assert.strictEqual(tx.receipt.gasUsed, expectedGasUsed);
       assert.strictEqual(
         balanceNow,
-        BigNumber(accountsBefore[key])
+        BigNumber(balancesBefore[key])
           .add(BigNumber(value).divide(2))
           .subtract(BigNumber(expectedGasUsed).multiply(BigNumber(gasPrice)))
           .toString()
@@ -152,7 +152,7 @@ contract('Splitter', accounts => {
 
       // ganache provider doesn't support event catch but it is OK there is no delay
       const actual = await web3.eth.getBalance(key);
-      assert.notEqual(actual, accountsBefore[key]);
+      assert.notEqual(actual, balancesBefore[key]);
     }
   });
 });
