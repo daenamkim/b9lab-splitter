@@ -3,7 +3,6 @@ const truffleAssert = require('truffle-assertions');
 
 contract('Splitter', accounts => {
   const [owner, alice, bob, carol] = accounts;
-  const gasPrice = web3.utils.toWei('2', 'gwei'); // normal speed (slow: 1 gwei, fast: 8 gwei);
   const gas = '100000'; // gas limit
   before(async () => {
     assert.isAbove(accounts.length, 3, 'The number of accounts is 4 at least');
@@ -20,7 +19,6 @@ contract('Splitter', accounts => {
       splitterInstance.split(bob, carol, {
         from: alice,
         value: '0',
-        gasPrice,
         gas
       }),
       'A given value should be bigger than 0'
@@ -31,7 +29,6 @@ contract('Splitter', accounts => {
       splitterInstance.split(bob, {
         from: alice,
         value: '100',
-        gasPrice,
         gas
       }),
       'invalid address'
@@ -41,7 +38,6 @@ contract('Splitter', accounts => {
       splitterInstance.split(bob, 0, {
         from: alice,
         value: '100',
-        gasPrice,
         gas
       }),
       'invalid address'
@@ -54,7 +50,6 @@ contract('Splitter', accounts => {
         {
           from: alice,
           value: '100',
-          gasPrice,
           gas
         }
       ),
@@ -66,7 +61,6 @@ contract('Splitter', accounts => {
       splitterInstance.split(alice, carol, {
         from: alice,
         value: '100',
-        gasPrice,
         gas
       }),
       'A sender should not be one of receivers'
@@ -77,7 +71,6 @@ contract('Splitter', accounts => {
     await splitterInstance.split(bob, carol, {
       from: alice,
       value,
-      gasPrice,
       gas
     });
 
@@ -102,7 +95,6 @@ contract('Splitter', accounts => {
     await truffleAssert.fails(
       splitterInstance.withdraw({
         from: bob,
-        gasPrice,
         gas
       }),
       'A requested account should have balance'
@@ -111,32 +103,29 @@ contract('Splitter', accounts => {
   it('should call split of the contract', async () => {
     const balanceBefore = await web3.eth.getBalance(alice);
     const value = web3.utils.toWei('30', 'ether');
-    const gasPrice = await web3.eth.getGasPrice();
     const tx = await splitterInstance.split(bob, carol, {
       from: alice,
       value,
-      gasPrice,
       gas
     });
-
+    const gasPrice = (await web3.eth.getTransaction(tx.receipt.transactionHash))
+      .gasPrice;
     const balanceNow = await web3.eth.getBalance(alice);
-    const expectedGasUsed = 73623;
-    assert.isBelow(tx.receipt.gasUsed, expectedGasUsed * 1.1);
-    assert.strictEqual(
-      balanceNow,
-      BigNumber(balanceBefore)
-        .subtract(BigNumber(expectedGasUsed).multiply(BigNumber(gasPrice)))
-        .subtract(BigNumber(value))
-        .toString()
+    const expectedGasUsed = 75000;
+    assert.isBelow(tx.receipt.gasUsed, expectedGasUsed);
+    assert.isTrue(
+      BigNumber(balanceNow).gt(
+        BigNumber(balanceBefore)
+          .subtract(BigNumber(value))
+          .subtract(expectedGasUsed * gasPrice)
+      )
     );
   });
   it('should withdraw value to address', async () => {
     const value = web3.utils.toWei('30', 'ether');
-    const gasPrice = await web3.eth.getGasPrice();
     await splitterInstance.split(bob, carol, {
       from: alice,
       value,
-      gasPrice,
       gas
     });
 
@@ -146,19 +135,22 @@ contract('Splitter', accounts => {
     for (const key in balancesBefore) {
       const tx = await splitterInstance.withdraw({
         from: key,
-        gasPrice,
         gas
       });
 
+      const gasPrice = (await web3.eth.getTransaction(
+        tx.receipt.transactionHash
+      )).gasPrice;
       const balanceNow = await web3.eth.getBalance(key);
-      const expectedGasUsed = 21089;
-      assert.isBelow(tx.receipt.gasUsed, expectedGasUsed * 1.1);
-      assert.strictEqual(
-        balanceNow,
-        BigNumber(balancesBefore[key])
-          .add(BigNumber(value).divide(2))
-          .subtract(BigNumber(expectedGasUsed).multiply(BigNumber(gasPrice)))
-          .toString()
+      const expectedGasUsed = 25000;
+      assert.isBelow(tx.receipt.gasUsed, expectedGasUsed);
+      truffleAssert;
+      assert.isTrue(
+        BigNumber(balanceNow).gt(
+          BigNumber(balancesBefore[key])
+            .add(BigNumber(value).div(2))
+            .subtract(expectedGasUsed * gasPrice)
+        )
       );
 
       // ganache provider doesn't support event catch but it is OK there is no delay
