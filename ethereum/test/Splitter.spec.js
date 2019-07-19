@@ -10,7 +10,7 @@ contract('Splitter', accounts => {
   });
 
   let splitterInstance;
-  beforeEach(async () => {
+  beforeEach('deploy a new Splitter contract', async () => {
     splitterInstance = await artifact.new({ from: owner });
   });
   it('should not split value if msg.value is smaller than 1', async () => {
