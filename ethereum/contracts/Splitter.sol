@@ -29,8 +29,8 @@ contract Splitter is Pausable {
   function withdraw() public whenNotPaused {
     require(accounts[msg.sender] > 0, 'A requested account should have balance');
 
-    msg.sender.transfer(accounts[msg.sender]);
     accounts[msg.sender] = 0;
+    msg.sender.transfer(accounts[msg.sender]);
 
     emit LogWithdraw(msg.sender);
   }
