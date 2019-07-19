@@ -17,11 +17,9 @@ contract Splitter is Pausable {
     require(msg.sender != receiver1 && msg.sender != receiver2, 'A sender should not be one of receivers');
 
     uint value = msg.value.div(2);
-    uint valueReceiver1 = accounts[receiver1];
-    uint valueReceiver2 = accounts[receiver2];
     accounts[msg.sender] += msg.value.mod(2);
-    accounts[receiver1] = valueReceiver1.add(value);
-    accounts[receiver2] = valueReceiver2.add(value);
+    accounts[receiver1] = accounts[receiver1].add(value);
+    accounts[receiver2] = accounts[receiver2].add(value);
 
     emit LogSplit(msg.sender, msg.value, receiver1, receiver2);
   }
