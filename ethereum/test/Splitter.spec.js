@@ -1,5 +1,6 @@
 const BigNumber = require('big-number');
 const truffleAssert = require('truffle-assertions');
+const artifact = artifacts.require('Splitter.sol');
 
 contract('Splitter', accounts => {
   const [owner, alice, bob, carol] = accounts;
@@ -10,9 +11,7 @@ contract('Splitter', accounts => {
 
   let splitterInstance;
   beforeEach(async () => {
-    splitterInstance = await artifacts
-      .require('Splitter.sol')
-      .new({ from: owner });
+    splitterInstance = await artifact.new({ from: owner });
   });
   it('should not split value if msg.value is smaller than 1', async () => {
     await truffleAssert.fails(
