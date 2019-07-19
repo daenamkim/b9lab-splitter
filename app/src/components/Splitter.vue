@@ -79,7 +79,6 @@
 </template>
 
 <script>
-// import Web3 from "web3";
 import web3, {
   validateNetwork,
   getAccounts,
@@ -270,6 +269,13 @@ export default {
       this.users[index].isRunning = isHost(hosts.GANACHE) ? false : true;
       const receivers = this.users.filter((_, i) => i !== index);
       try {
+        // simulate first
+        await this.splitterContract.methods
+          .split(receivers[0].account, receivers[1].account)
+          .call({
+            from: this.users[index].account,
+            value: this.toWei(this.users[index].valueSend)
+          });
         await this.splitterContract.methods
           .split(receivers[0].account, receivers[1].account)
           .send({
@@ -291,6 +297,10 @@ export default {
         ? false
         : true;
       try {
+        // simulate first
+        await this.splitterContract.methods.withdraw().call({
+          from: this.usersContract[index].account
+        });
         await this.splitterContract.methods
           .withdraw()
           .send({ from: this.usersContract[index].account });
