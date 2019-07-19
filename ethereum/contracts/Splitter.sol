@@ -1,8 +1,11 @@
 pragma solidity 0.5.10;
 
 import './Pausable.sol';
+import './SafeMath.sol';
 
 contract Splitter is Pausable {
+  using SafeMath for uint256;
+
   mapping(address => uint) public accounts;
 
   event LogSplit(address indexed from, uint value, address indexed receiver1, address indexed receiver2);
@@ -13,14 +16,12 @@ contract Splitter is Pausable {
     require(receiver1 != address(0) && receiver2 != address(0), 'A receiver should not be 0x');
     require(msg.sender != receiver1 && msg.sender != receiver2, 'A sender should not be one of receivers');
 
-    uint mod = msg.value % 2;
-    uint value = msg.value / 2;
+    uint value = msg.value.div(2);
     uint valueReceiver1 = accounts[receiver1];
     uint valueReceiver2 = accounts[receiver2];
-    require(valueReceiver1 + value >= value && valueReceiver2 + value >= value, 'A value is too big');
-    accounts[msg.sender] += mod;
-    accounts[receiver1] = valueReceiver1 + value;
-    accounts[receiver2] = valueReceiver2 + value;
+    accounts[msg.sender] += msg.value.mod(2);
+    accounts[receiver1] = valueReceiver1.add(value);
+    accounts[receiver2] = valueReceiver2.add(value);
 
     emit LogSplit(msg.sender, msg.value, receiver1, receiver2);
   }

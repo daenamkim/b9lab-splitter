@@ -120,7 +120,7 @@ contract('Splitter', accounts => {
     });
 
     const balanceNow = await web3.eth.getBalance(alice);
-    const expectedGasUsed = 73716;
+    const expectedGasUsed = 73623;
     assert.isBelow(tx.receipt.gasUsed, expectedGasUsed * 1.1);
     assert.strictEqual(
       balanceNow,
