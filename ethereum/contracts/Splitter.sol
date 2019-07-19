@@ -25,10 +25,11 @@ contract Splitter is Pausable {
   }
 
   function withdraw() public whenNotPaused {
-    require(accounts[msg.sender] > 0, 'A requested account should have balance');
+    uint value = accounts[msg.sender];
+    require(value > 0, 'A requested account should have balance');
 
     accounts[msg.sender] = 0;
-    msg.sender.transfer(accounts[msg.sender]);
+    msg.sender.transfer(value);
 
     emit LogWithdraw(msg.sender);
   }
