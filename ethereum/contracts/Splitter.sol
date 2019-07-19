@@ -15,10 +15,12 @@ contract Splitter is Pausable {
 
     uint mod = msg.value % 2;
     uint value = msg.value / 2;
-    require(accounts[receiver1] + value >= value && accounts[receiver2] + value >= value, 'A value is too big');
+    uint valueReceiver1 = accounts[receiver1];
+    uint valueReceiver2 = accounts[receiver2];
+    require(valueReceiver1 + value >= value && valueReceiver2 + value >= value, 'A value is too big');
     accounts[msg.sender] += mod;
-    accounts[receiver1] += value;
-    accounts[receiver2] += value;
+    accounts[receiver1] = valueReceiver1 + value;
+    accounts[receiver2] = valueReceiver2 + value;
 
     emit LogSplit(msg.sender, msg.value, receiver1, receiver2);
   }
