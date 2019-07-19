@@ -28,6 +28,15 @@
                   :disabled="!validateValue(user.valueSend) || !user.isEnabled || user.isRunning"
                 >{{ user.isRunning ? 'Sending...' : 'Split'}}</v-btn>
               </v-flex>
+              <v-flex v-if="user.txHash.length > 0">
+                <a
+                  :href="`https://ropsten.etherscan.io/tx/${user.txHash}`"
+                  style="text-decoration: none"
+                  target="_blank"
+                >
+                  <v-chip color="red" text-color="white">Check on Etherscan</v-chip>
+                </a>
+              </v-flex>
             </v-layout>
           </v-card>
         </v-flex>
@@ -56,6 +65,15 @@
                       <v-list-tile-title>{{ user.account }}</v-list-tile-title>
                       <v-list-tile-sub-title>{{ user.balance }} ETH</v-list-tile-sub-title>
                     </v-list-tile-content>
+                    <div v-if="user.txHash.length > 0">
+                      <a
+                        :href="`https://ropsten.etherscan.io/tx/${user.txHash}`"
+                        style="text-decoration: none"
+                        target="_blank"
+                      >
+                        <v-chip color="red" text-color="white">Check on Etherscan</v-chip>
+                      </a>
+                    </div>
                     <v-btn
                       depressed
                       large
@@ -129,7 +147,8 @@ export default {
         ),
         isContract: true,
         isEnabled: true,
-        isRunning: false
+        isRunning: false,
+        txHash: ""
       };
       this.usersContract.push(info);
       for (const account of accounts) {
@@ -142,7 +161,8 @@ export default {
           ),
           isContract: false,
           isEnabled: true,
-          isRunning: false
+          isRunning: false,
+          txHash: ""
         };
         this.usersContract.push(info);
       }
@@ -209,7 +229,8 @@ export default {
             balance: this.toEther(await web3.eth.getBalance(accounts[i])),
             valueSend: 1,
             isEnabled: true,
-            isRunning: false
+            isRunning: false,
+            txHash: ""
           };
           this.users.push(user);
         }
@@ -281,6 +302,11 @@ export default {
           .send({
             from: this.users[index].account,
             value: this.toWei(this.users[index].valueSend)
+          })
+          .on("transactionHash", transactionHash => {
+            if (!isHost(hosts.GANACHE)) {
+              this.users[index].txHash = transactionHash;
+            }
           });
       } catch (error) {
         this.users[index].isRunning = false;
@@ -303,7 +329,12 @@ export default {
         });
         await this.splitterContract.methods
           .withdraw()
-          .send({ from: this.usersContract[index].account });
+          .send({ from: this.usersContract[index].account })
+          .on("transactionHash", transactionHash => {
+            if (!isHost(hosts.GANACHE)) {
+              this.usersContract[index].txHash = transactionHash;
+            }
+          });
       } catch (error) {
         this.usersContract[index].isRunning = false;
         console.log(error);
