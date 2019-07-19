@@ -27,15 +27,17 @@ export const validateNetwork = async () => {
     : (await web3.eth.net.getNetworkType()) === NETWORK;
 };
 
+// CHANGE FOR DEV
+export const accountsProvider = [
+  '0x672b39F0D2609a6FeC23358f4b8D8c92104BAF56',
+  '0x3F37278403BF4Fa7c2B8fa0D21Af353c554641A1',
+  '0x5D0af8790F21375C65A75C3822d75fEe75BfC649'
+];
+
 export const getAccounts = async () => {
   return process.env.NODE_ENV === 'ganache'
     ? await web3.eth.getAccounts()
-    : [
-        // CHANGE FOR DEV
-        '0x672b39F0D2609a6FeC23358f4b8D8c92104BAF56',
-        '0x3F37278403BF4Fa7c2B8fa0D21Af353c554641A1',
-        '0x5D0af8790F21375C65A75C3822d75fEe75BfC649'
-      ];
+    : accountsProvider;
 };
 
 export const hosts = {

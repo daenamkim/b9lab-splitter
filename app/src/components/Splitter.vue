@@ -85,7 +85,8 @@ import web3, {
   getAccounts,
   getContract,
   isHost,
-  hosts
+  hosts,
+  accountsProvider
 } from "../Web3";
 import { setInterval } from "timers";
 
@@ -93,11 +94,6 @@ import { setInterval } from "timers";
 export default {
   name: "Splitter",
   data: () => ({
-    accountsProvider: [
-      "0x672b39F0D2609a6FeC23358f4b8D8c92104BAF56",
-      "0x3F37278403BF4Fa7c2B8fa0D21Af353c554641A1",
-      "0x5D0af8790F21375C65A75C3822d75fEe75BfC649"
-    ],
     owner: null,
     users: [],
     splitterContract: null,
@@ -111,7 +107,6 @@ export default {
     await this.initContract();
     await this.initAccounts();
   },
-  async mounted() {},
   methods: {
     async initContract() {
       this.splitterContract = await getContract();
@@ -119,14 +114,13 @@ export default {
       let accounts;
       if (isHost(hosts.GANACHE)) {
         try {
-          console.log("!!!!!!");
           accounts = await web3.eth.getAccounts();
           accounts = accounts.slice(1, 4);
         } catch (error) {
           console.error(error);
         }
       } else {
-        accounts = this.accountsProvider;
+        accounts = accountsProvider;
       }
 
       let info = {
