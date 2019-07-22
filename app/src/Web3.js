@@ -29,7 +29,7 @@ export default {
           }
           clearInterval(timer);
           if (process.env.NODE_ENV === 'development') {
-            web3Created = new Web3('http://127.0.0.1:8545');
+            web3Created = new Web3('http://127.0.0.1:9545');
           } else {
             if (typeof window.web3 !== 'undefined') {
               web3Created = new Web3(window.web3.currentProvider);
