@@ -1,5 +1,6 @@
 import Web3 from 'web3';
-import splitterAbi from '../../ethereum/build/contracts/Splitter.json';
+import splitterJson from '../../ethereum/build/contracts/Splitter.json';
+import truffleContract from 'truffle-contract';
 
 const CONTRACT_ADDR =
   process.env.NODE_ENV === 'development'
@@ -63,7 +64,11 @@ export default {
           ACCOUNTS;
     };
     Vue.prototype.$getContract = () => {
-      return new web3Created.eth.Contract(splitterAbi.abi, CONTRACT_ADDR);
+      const SplitterContract = truffleContract(splitterJson);
+      SplitterContract.setProvider(web3Created.currentProvider);
+      console.log('WHY!?: ', SplitterContract.deployed());
+
+      return new web3Created.eth.Contract(splitterJson.abi, CONTRACT_ADDR);
     };
   }
 };
