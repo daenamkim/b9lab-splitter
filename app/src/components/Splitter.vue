@@ -124,17 +124,8 @@ export default {
   },
   methods: {
     async initContract() {
-      this.splitterContract = await this.$root.$getContract(this.web3);
-
+      this.splitterContract = await this.$root.$getContract();
       let accounts = await this.$root.$getAccounts();
-      if (this.$root.$isHost(this.web3, hosts.GANACHE)) {
-        try {
-          accounts = accounts.slice(1, 4);
-        } catch (error) {
-          console.error(error);
-        }
-      }
-
       let info = {
         account: this.splitterContract.address,
         balance: this.toEther(
@@ -164,7 +155,7 @@ export default {
 
       // "Error: Subscriptions are not supported with the HttpProvider."
       // https://github.com/trufflesuite/truffle/issues/1633
-      if (this.$root.$isHost(this.web3, hosts.METAMASK)) {
+      if (this.$root.$isHost(hosts.METAMASK)) {
         this.splitterContract.events
           .LogSplit(
             {
@@ -210,11 +201,6 @@ export default {
     },
     async initAccounts() {
       let accounts = await this.$root.$getAccounts();
-      // accounts[0] is owner of contract in ganache
-      if (this.$root.$isHost(this.web3, hosts.GANACHE)) {
-        accounts = accounts.slice(1, 4);
-      }
-
       const names = ["Alice", "Bob", "Carol"];
       try {
         for (const i in accounts) {
@@ -239,12 +225,12 @@ export default {
       }, 1000);
     },
     async validateNetwork() {
-      return process.env.NODE_ENV === "ganache"
+      return process.env.NODE_ENV === "development"
         ? true
         : (await this.web3.eth.net.getNetworkType()) === NETWORK;
     },
     async validateAccount(account) {
-      return this.$root.$isHost(this.web3, hosts.GANACHE)
+      return this.$root.$isHost(hosts.GANACHE)
         ? true
         : account === (await this.web3.eth.getAccounts())[0];
     },
@@ -285,14 +271,11 @@ export default {
       return !(isNaN(value) || !value || parseFloat(value) === 0);
     },
     async splitHandle(index) {
-      if (
-        !this.$root.$isHost(this.web3, hosts.GANACHE) &&
-        this.users[index].isRunning
-      ) {
+      if (!this.$root.$isHost(hosts.GANACHE) && this.users[index].isRunning) {
         return;
       }
 
-      this.users[index].isRunning = this.$root.$isHost(this.web3, hosts.GANACHE)
+      this.users[index].isRunning = this.$root.$isHost(hosts.GANACHE)
         ? false
         : true;
       const receivers = this.users.filter((_, i) => i !== index);
@@ -311,7 +294,7 @@ export default {
             value: this.toWei(this.users[index].valueSend)
           })
           .on("transactionHash", transactionHash => {
-            if (!this.$root.$isHost(this.web3, hosts.GANACHE)) {
+            if (!this.$root.$isHost(hosts.GANACHE)) {
               this.users[index].txHash = transactionHash;
             }
           });
@@ -323,7 +306,7 @@ export default {
     async withdrawHandle(index) {
       index += 1;
       if (
-        !this.$root.$isHost(this.web3, hosts.GANACHE) &&
+        !this.$root.$isHost(hosts.GANACHE) &&
         this.usersContract[index].isRunning
       ) {
         return;
@@ -344,7 +327,7 @@ export default {
           .withdraw()
           .send({ from: this.usersContract[index].account })
           .on("transactionHash", transactionHash => {
-            if (!this.$root.$isHost(this.web3, hosts.GANACHE)) {
+            if (!this.$root.$isHost(hosts.GANACHE)) {
               this.usersContract[index].txHash = transactionHash;
             }
           });
