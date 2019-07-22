@@ -1,6 +1,5 @@
 import Web3 from 'web3';
 import splitterAbi from '../../ethereum/build/contracts/Splitter.json';
-import { Accounts } from 'web3-eth-accounts';
 
 const CONTRACT_ADDR =
   process.env.NODE_ENV === 'development'
