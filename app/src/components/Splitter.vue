@@ -134,9 +134,10 @@ export default {
         info = {
           account,
           balance: this.toEther(
-            await this.splitterContract.methods
-              .accounts(this.splitterContract.address)
-              .call()
+            // do not use like "this.splitterContract.methods..accounts(this.splitterContract.address).call()"
+            await this.splitterContract.accounts.call(
+              this.splitterContract.address
+            )
           ),
           isContract: false,
           isEnabled: true,
@@ -234,7 +235,7 @@ export default {
       for (const user of this.usersContract) {
         user.balance = !user.isContract
           ? this.toEther(
-              await this.splitterContract.methods.accounts(user.account).call()
+              await this.splitterContract.accounts.call(user.account)
             )
           : this.toEther(await this.web3.eth.getBalance(user.account));
         user.isEnabled = await this.validateAccount(user.account);
@@ -269,15 +270,16 @@ export default {
       const receivers = this.users.filter((_, i) => i !== index);
       try {
         // simulate first
-        await this.splitterContract.methods
-          .split(receivers[0].account, receivers[1].account)
-          .call({
+        await this.splitterContract.split.call(
+          receivers[0].account,
+          receivers[1].account,
+          {
             from: this.users[index].account,
             value: this.toWei(this.users[index].valueSend)
-          });
-        await this.splitterContract.methods
-          .split(receivers[0].account, receivers[1].account)
-          .send({
+          }
+        );
+        await this.splitterContract
+          .split(receivers[0].account, receivers[1].account, {
             from: this.users[index].account,
             value: this.toWei(this.users[index].valueSend)
           })
@@ -305,12 +307,11 @@ export default {
         : true;
       try {
         // simulate first
-        await this.splitterContract.methods.withdraw().call({
+        await this.splitterContract.withdraw.call({
           from: this.usersContract[index].account
         });
-        await this.splitterContract.methods
-          .withdraw()
-          .send({ from: this.usersContract[index].account })
+        await this.splitterContract
+          .withdraw({ from: this.usersContract[index].account })
           .on("transactionHash", transactionHash => {
             if (!this.$root.$isHost(hosts.GANACHE)) {
               this.usersContract[index].txHash = transactionHash;

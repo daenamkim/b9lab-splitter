@@ -2,9 +2,6 @@ import Web3 from 'web3';
 import splitterJson from '../../ethereum/build/contracts/Splitter.json';
 import truffleContract from 'truffle-contract';
 
-// TODO: replace with deployed()
-const CONTRACT_ADDR = '0xCfEB869F69431e42cdB54A4F4f105C19C080A601';
-
 export default {
   install: Vue => {
     window.isLoaded = false;
@@ -38,15 +35,13 @@ export default {
     Vue.prototype.$getAccounts = async () => {
       return (await window.web3Created.eth.getAccounts()).slice(1, 4);
     };
-    Vue.prototype.$getContract = () => {
-      // TODO:
-      // const SplitterContract = truffleContract(splitterJson);
-      // SplitterContract.setProvider(window.web3Created.currentProvider);
-      // return SplitterContract.deployed();
-      return new window.web3Created.eth.Contract(
-        splitterJson.abi,
-        CONTRACT_ADDR
-      );
+    Vue.prototype.$getContract = async () => {
+      // note that  v1.0.0-beta.55 doesn't work! /T.T/
+      // so for safety, do install truffle not install web3 alone
+      // https://stackoverflow.com/questions/56245575/getting-error-when-try-to-deploy-contract-from-node-js-using-truffle-contract
+      const SplitterContract = truffleContract(splitterJson);
+      SplitterContract.setProvider(window.web3Created.currentProvider);
+      return await SplitterContract.deployed();
     };
   }
 };
