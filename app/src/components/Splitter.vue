@@ -100,8 +100,6 @@
 import { hosts } from "../web3";
 import { setInterval } from "timers";
 
-const NETWORK = "ropsten";
-
 /* eslint-disable no-console */
 export default {
   name: "Splitter",
@@ -114,11 +112,6 @@ export default {
   }),
   async created() {
     this.web3 = await this.$root.$getWeb3();
-
-    if (!(await this.validateNetwork(this.web3))) {
-      alert(`Please select your netowrk to ropsten`);
-      return;
-    }
     await this.initContract();
     await this.initAccounts();
   },
@@ -224,11 +217,6 @@ export default {
         this.updateUsers();
       }, 1000);
     },
-    async validateNetwork() {
-      return process.env.NODE_ENV === "development"
-        ? true
-        : (await this.web3.eth.net.getNetworkType()) === NETWORK;
-    },
     async validateAccount(account) {
       return this.$root.$isHost(hosts.GANACHE)
         ? true
@@ -312,10 +300,7 @@ export default {
         return;
       }
 
-      this.usersContract[index].isRunning = this.$root.$isHost(
-        this.web3,
-        hosts.GANACHE
-      )
+      this.usersContract[index].isRunning = this.$root.$isHost(hosts.GANACHE)
         ? false
         : true;
       try {

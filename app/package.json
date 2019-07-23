@@ -3,9 +3,8 @@
   "version": "0.1.0",
   "license": "MIT",
   "scripts": {
-    "serve:dev:eth": "cd ../ethereum && ./stop-ganache.sh && ./start-ganache.sh && yarn truffle migrate --network development",
-    "serve:dev": "NODE_ENV=development vue-cli-service serve",
-    "serve": "NODE_ENV=production vue-cli-service serve",
+    "serve:eth": "cd ../ethereum && ./stop-ganache.sh && ./start-ganache.sh && yarn truffle migrate --network development",
+    "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint"
   },
