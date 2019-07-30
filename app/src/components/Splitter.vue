@@ -28,6 +28,15 @@
                   :disabled="!validateValue(user.valueSend) || !user.isEnabled || user.isRunning"
                 >{{ user.isRunning ? 'Sending...' : 'Split'}}</v-btn>
               </v-flex>
+              <v-flex v-if="user.txHash.length > 0">
+                <a
+                  :href="`https://ropsten.etherscan.io/tx/${user.txHash}`"
+                  style="text-decoration: none"
+                  target="_blank"
+                >
+                  <v-chip color="red" text-color="white">Check on Etherscan</v-chip>
+                </a>
+              </v-flex>
             </v-layout>
           </v-card>
         </v-flex>
@@ -56,6 +65,15 @@
                       <v-list-tile-title>{{ user.account }}</v-list-tile-title>
                       <v-list-tile-sub-title>{{ user.balance }} ETH</v-list-tile-sub-title>
                     </v-list-tile-content>
+                    <div v-if="user.txHash.length > 0">
+                      <a
+                        :href="`https://ropsten.etherscan.io/tx/${user.txHash}`"
+                        style="text-decoration: none"
+                        target="_blank"
+                      >
+                        <v-chip color="red" text-color="white">Check on Etherscan</v-chip>
+                      </a>
+                    </div>
                     <v-btn
                       depressed
                       large
@@ -79,84 +97,59 @@
 </template>
 
 <script>
-// import Web3 from "web3";
-import web3, {
-  validateNetwork,
-  getAccounts,
-  getContract,
-  isHost,
-  hosts
-} from "../Web3";
+import { hosts } from "../web3";
 import { setInterval } from "timers";
 
 /* eslint-disable no-console */
 export default {
   name: "Splitter",
   data: () => ({
-    accountsProvider: [
-      "0x672b39F0D2609a6FeC23358f4b8D8c92104BAF56",
-      "0x3F37278403BF4Fa7c2B8fa0D21Af353c554641A1",
-      "0x5D0af8790F21375C65A75C3822d75fEe75BfC649"
-    ],
+    web3: null,
     owner: null,
     users: [],
     splitterContract: null,
     usersContract: []
   }),
   async created() {
-    if (!(await validateNetwork())) {
-      alert(`Please select your netowrk to ropsten`);
-      return;
-    }
+    this.web3 = await this.$root.$getWeb3();
     await this.initContract();
     await this.initAccounts();
   },
-  async mounted() {},
   methods: {
     async initContract() {
-      this.splitterContract = await getContract();
-
-      let accounts;
-      if (isHost(hosts.GANACHE)) {
-        try {
-          console.log("!!!!!!");
-          accounts = await web3.eth.getAccounts();
-          accounts = accounts.slice(1, 4);
-        } catch (error) {
-          console.error(error);
-        }
-      } else {
-        accounts = this.accountsProvider;
-      }
-
+      this.splitterContract = await this.$root.$getContract();
+      let accounts = await this.$root.$getAccounts();
       let info = {
         account: this.splitterContract.address,
         balance: this.toEther(
-          await web3.eth.getBalance(this.splitterContract.address)
+          await this.web3.eth.getBalance(this.splitterContract.address)
         ),
         isContract: true,
         isEnabled: true,
-        isRunning: false
+        isRunning: false,
+        txHash: ""
       };
       this.usersContract.push(info);
       for (const account of accounts) {
         info = {
           account,
           balance: this.toEther(
-            await this.splitterContract.methods
-              .accounts(this.splitterContract.address)
-              .call()
+            // do not use like "this.splitterContract.methods..accounts(this.splitterContract.address).call()"
+            await this.splitterContract.accounts.call(
+              this.splitterContract.address
+            )
           ),
           isContract: false,
           isEnabled: true,
-          isRunning: false
+          isRunning: false,
+          txHash: ""
         };
         this.usersContract.push(info);
       }
 
       // "Error: Subscriptions are not supported with the HttpProvider."
       // https://github.com/trufflesuite/truffle/issues/1633
-      if (isHost(hosts.METAMASK)) {
+      if (this.$root.$isHost(hosts.METAMASK)) {
         this.splitterContract.events
           .LogSplit(
             {
@@ -201,22 +194,18 @@ export default {
       }
     },
     async initAccounts() {
-      let accounts = await getAccounts();
-      // accounts[0] is owner of contract in ganache
-      if (isHost(hosts.GANACHE)) {
-        accounts = accounts.slice(1, 4);
-      }
-
+      let accounts = await this.$root.$getAccounts();
       const names = ["Alice", "Bob", "Carol"];
       try {
         for (const i in accounts) {
           const user = {
             name: names[i],
             account: accounts[i],
-            balance: this.toEther(await web3.eth.getBalance(accounts[i])),
+            balance: this.toEther(await this.web3.eth.getBalance(accounts[i])),
             valueSend: 1,
             isEnabled: true,
-            isRunning: false
+            isRunning: false,
+            txHash: ""
           };
           this.users.push(user);
         }
@@ -230,13 +219,15 @@ export default {
       }, 1000);
     },
     async validateAccount(account) {
-      return isHost(hosts.GANACHE)
+      return this.$root.$isHost(hosts.GANACHE)
         ? true
-        : account === (await web3.eth.getAccounts())[0];
+        : account === (await this.web3.eth.getAccounts())[0];
     },
     async updateUsers(event = "") {
       for (const user of this.users) {
-        user.balance = this.toEther(await web3.eth.getBalance(user.account));
+        user.balance = this.toEther(
+          await this.web3.eth.getBalance(user.account)
+        );
         user.isEnabled = await this.validateAccount(user.account);
         user.isRunning = event === "split" ? false : user.isRunning;
       }
@@ -244,18 +235,18 @@ export default {
       for (const user of this.usersContract) {
         user.balance = !user.isContract
           ? this.toEther(
-              await this.splitterContract.methods.accounts(user.account).call()
+              await this.splitterContract.accounts.call(user.account)
             )
-          : this.toEther(await web3.eth.getBalance(user.account));
+          : this.toEther(await this.web3.eth.getBalance(user.account));
         user.isEnabled = await this.validateAccount(user.account);
         user.isRunning = event === "withdraw" ? false : user.isRunning;
       }
     },
     toEther(value) {
-      return web3.utils.fromWei(String(value), "ether");
+      return this.web3.utils.fromWei(String(value), "ether");
     },
     toWei(value) {
-      return web3.utils.toWei(String(value), "ether");
+      return this.web3.utils.toWei(String(value), "ether");
     },
     getColor(index) {
       const colors = [
@@ -269,18 +260,33 @@ export default {
       return !(isNaN(value) || !value || parseFloat(value) === 0);
     },
     async splitHandle(index) {
-      if (!isHost(hosts.GANACHE) && this.users[index].isRunning) {
+      if (!this.$root.$isHost(hosts.GANACHE) && this.users[index].isRunning) {
         return;
       }
 
-      this.users[index].isRunning = isHost(hosts.GANACHE) ? false : true;
+      this.users[index].isRunning = this.$root.$isHost(hosts.GANACHE)
+        ? false
+        : true;
       const receivers = this.users.filter((_, i) => i !== index);
       try {
-        await this.splitterContract.methods
-          .split(receivers[0].account, receivers[1].account)
-          .send({
+        // simulate first
+        await this.splitterContract.split.call(
+          receivers[0].account,
+          receivers[1].account,
+          {
             from: this.users[index].account,
             value: this.toWei(this.users[index].valueSend)
+          }
+        );
+        await this.splitterContract
+          .split(receivers[0].account, receivers[1].account, {
+            from: this.users[index].account,
+            value: this.toWei(this.users[index].valueSend)
+          })
+          .on("transactionHash", transactionHash => {
+            if (!this.$root.$isHost(hosts.GANACHE)) {
+              this.users[index].txHash = transactionHash;
+            }
           });
       } catch (error) {
         this.users[index].isRunning = false;
@@ -289,17 +295,28 @@ export default {
     },
     async withdrawHandle(index) {
       index += 1;
-      if (!isHost(hosts.GANACHE) && this.usersContract[index].isRunning) {
+      if (
+        !this.$root.$isHost(hosts.GANACHE) &&
+        this.usersContract[index].isRunning
+      ) {
         return;
       }
 
-      this.usersContract[index].isRunning = isHost(hosts.GANACHE)
+      this.usersContract[index].isRunning = this.$root.$isHost(hosts.GANACHE)
         ? false
         : true;
       try {
-        await this.splitterContract.methods
-          .withdraw()
-          .send({ from: this.usersContract[index].account });
+        // simulate first
+        await this.splitterContract.withdraw.call({
+          from: this.usersContract[index].account
+        });
+        await this.splitterContract
+          .withdraw({ from: this.usersContract[index].account })
+          .on("transactionHash", transactionHash => {
+            if (!this.$root.$isHost(hosts.GANACHE)) {
+              this.usersContract[index].txHash = transactionHash;
+            }
+          });
       } catch (error) {
         this.usersContract[index].isRunning = false;
         console.log(error);

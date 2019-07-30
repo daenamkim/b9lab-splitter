@@ -9,6 +9,7 @@
   "devDependencies": {
     "big-number": "^2.0.0",
     "ganache-cli": "^6.4.4",
-    "truffle": "^5.0.26"
+    "truffle": "^5.0.26",
+    "truffle-assertions": "^0.9.1"
   }
 }

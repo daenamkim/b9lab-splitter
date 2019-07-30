@@ -1,97 +1,75 @@
 const BigNumber = require('big-number');
+const truffleAssert = require('truffle-assertions');
+const artifact = artifacts.require('Splitter.sol');
 
 contract('Splitter', accounts => {
-  if (!accounts || accounts.length < 4) {
-    console.error('Insufficient number of accounts');
-    return;
-  }
+  const [owner, alice, bob, carol] = accounts;
+  const gas = '100000'; // gas limit
+  before(async () => {
+    assert.isAbove(accounts.length, 3, 'The number of accounts is 4 at least');
+  });
 
-  let owner;
-  let alice;
-  let bob;
-  let carol;
   let splitterInstance;
-  let gasPrice;
-  let gas; // gas limit
-  beforeEach(async () => {
-    owner = accounts[0];
-    alice = accounts[1];
-    bob = accounts[2];
-    carol = accounts[3];
-    splitterInstance = await artifacts.require('Splitter.sol').new();
-    gasPrice = web3.utils.toWei('2', 'gwei'); // normal speed (slow: 1 gwei, fast: 8 gwei)
-    gas = '100000';
+  beforeEach('deploy a new Splitter contract', async () => {
+    splitterInstance = await artifact.new({ from: owner });
   });
   it('should not split value if msg.value is smaller than 1', async () => {
-    try {
-      await splitterInstance.split(bob, carol, {
+    await truffleAssert.fails(
+      splitterInstance.split(bob, carol, {
         from: alice,
         value: '0',
-        gasPrice,
         gas
-      });
-      assert.fail();
-    } catch (error) {
-      assert.equal(error.reason, 'A given value should be bigger than 0');
-    }
+      }),
+      'A given value should be bigger than 0'
+    );
   });
   it('should not split value if a receiver address is empty', async () => {
-    try {
-      await splitterInstance.split(bob, {
+    await truffleAssert.fails(
+      splitterInstance.split(bob, {
         from: alice,
         value: '100',
-        gasPrice,
         gas
-      });
-    } catch (error) {
-      assert.equal(error.reason, 'invalid address');
-    }
+      }),
+      'invalid address'
+    );
 
-    try {
-      await splitterInstance.split(bob, 0, {
+    await truffleAssert.fails(
+      splitterInstance.split(bob, 0, {
         from: alice,
         value: '100',
-        gasPrice,
         gas
-      });
-    } catch (error) {
-      assert.equal(error.reason, 'invalid address');
-    }
+      }),
+      'invalid address'
+    );
 
-    try {
-      await splitterInstance.split(
+    await truffleAssert.fails(
+      splitterInstance.split(
         bob,
         '0x0000000000000000000000000000000000000000',
         {
           from: alice,
           value: '100',
-          gasPrice,
           gas
         }
-      );
-    } catch (error) {
-      assert.equal(error.reason, 'A receiver should not be 0x');
-    }
+      ),
+      'A receiver should not be 0x'
+    );
   });
   it('should not split value if a sender is one of receivers', async () => {
-    try {
-      await splitterInstance.split(alice, carol, {
+    await truffleAssert.fails(
+      splitterInstance.split(alice, carol, {
         from: alice,
         value: '100',
-        gasPrice,
         gas
-      });
-      assert.fail();
-    } catch (error) {
-      assert.equal(error.reason, 'A sender should not be one of receivers');
-    }
+      }),
+      'A sender should not be one of receivers'
+    );
   });
   it('should store divided value to each other and remainder to sender back', async () => {
     const value = '11';
     await splitterInstance.split(bob, carol, {
       from: alice,
       value,
-      gasPrice,
       gas
     });
 
@@ -101,74 +79,82 @@ contract('Splitter', accounts => {
     expected[carol] = '5';
 
     for (const key in expected) {
-      assert.equal(
+      assert.strictEqual(
         (await splitterInstance.accounts(key, { from: owner })).toString(),
         expected[key]
       );
     }
 
-    assert.equal(
+    assert.strictEqual(
       (await web3.eth.getBalance(splitterInstance.address)).toString(),
       value
     );
   });
   it('should not allow to withdraw when account balance is 0', async () => {
-    try {
-      await splitterInstance.withdraw({
+    await truffleAssert.fails(
+      splitterInstance.withdraw({
         from: bob,
-        gasPrice,
         gas
-      });
-      assert.fail();
-    } catch (error) {
-      assert.equal(error.reason, 'A requested account should have balance');
-    }
+      }),
+      'A requested account should have balance'
+    );
   });
-  it('should withdraw value to address', async () => {
+  it('should call split of the contract', async () => {
     const balanceBefore = await web3.eth.getBalance(alice);
     const value = web3.utils.toWei('30', 'ether');
     const tx = await splitterInstance.split(bob, carol, {
       from: alice,
       value,
-      gasPrice,
+      gas
+    });
+    const gasPrice = (await web3.eth.getTransaction(tx.receipt.transactionHash))
+      .gasPrice;
+    const balanceNow = await web3.eth.getBalance(alice);
+    const expectedGasUsed = 75000;
+    assert.isBelow(tx.receipt.gasUsed, expectedGasUsed);
+    assert.isTrue(
+      BigNumber(balanceNow).gt(
+        BigNumber(balanceBefore)
+          .subtract(BigNumber(value))
+          .subtract(expectedGasUsed * gasPrice)
+      )
+    );
+  });
+  it('should withdraw value to address', async () => {
+    const value = web3.utils.toWei('30', 'ether');
+    await splitterInstance.split(bob, carol, {
+      from: alice,
+      value,
       gas
     });
 
-    const balanceNow = await web3.eth.getBalance(alice);
-    const expectedGasUsed = 73437;
-    assert.equal(tx.receipt.gasUsed, expectedGasUsed);
-    assert.equal(
-      balanceNow,
-      BigNumber(balanceBefore)
-        .subtract(BigNumber(expectedGasUsed).multiply(BigNumber(gasPrice)))
-        .subtract(BigNumber(value))
-        .toString()
-    );
-
-    const accountsBefore = {};
-    accountsBefore[bob] = await web3.eth.getBalance(bob);
-    accountsBefore[carol] = await web3.eth.getBalance(carol);
-    for (const key in accountsBefore) {
+    const balancesBefore = {};
+    balancesBefore[bob] = await web3.eth.getBalance(bob);
+    balancesBefore[carol] = await web3.eth.getBalance(carol);
+    for (const key in balancesBefore) {
       const tx = await splitterInstance.withdraw({
         from: key,
-        gasPrice,
         gas
       });
 
+      const gasPrice = (await web3.eth.getTransaction(
+        tx.receipt.transactionHash
+      )).gasPrice;
       const balanceNow = await web3.eth.getBalance(key);
-      const expectedGasUsed = 21007;
-      assert.equal(tx.receipt.gasUsed, expectedGasUsed);
-      assert.equal(
-        balanceNow,
-        BigNumber(accountsBefore[key])
-          .add(BigNumber(value).divide(2))
-          .subtract(BigNumber(expectedGasUsed).multiply(BigNumber(gasPrice)))
-          .toString()
+      const expectedGasUsed = 25000;
+      assert.isBelow(tx.receipt.gasUsed, expectedGasUsed);
+      truffleAssert;
+      assert.isTrue(
+        BigNumber(balanceNow).gt(
+          BigNumber(balancesBefore[key])
+            .add(BigNumber(value).div(2))
+            .subtract(expectedGasUsed * gasPrice)
+        )
       );
 
       // ganache provider doesn't support event catch but it is OK there is no delay
       const actual = await web3.eth.getBalance(key);
-      assert.notEqual(actual, accountsBefore[key]);
+      assert.notEqual(actual, balancesBefore[key]);
     }
   });
 });

@@ -3,17 +3,17 @@
   "version": "0.1.0",
   "license": "MIT",
   "scripts": {
-    "serve:ganache:eth": "cd ../ethereum && ./stop-ganache.sh && ./start-ganache.sh && yarn truffle deploy",
-    "serve:ganache": "NODE_ENV=ganache vue-cli-service serve",
+    "serve:eth": "cd ../ethereum && ./stop-ganache.sh && ./start-ganache.sh && yarn truffle migrate --network development",
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
     "core-js": "^2.6.5",
+    "truffle": "^5.0.28",
+    "truffle-contract": "^4.0.25",
     "vue": "^2.6.10",
-    "vuetify": "^1.5.5",
-    "web3": "^1.0.0-beta.55"
+    "vuetify": "^1.5.5"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "^3.9.0",

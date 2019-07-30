@@ -1,33 +1,35 @@
 pragma solidity 0.5.10;
 
 import './Pausable.sol';
+import './SafeMath.sol';
 
 contract Splitter is Pausable {
+  using SafeMath for uint256;
+
   mapping(address => uint) public accounts;
 
-  event LogSplit(address from, uint value, address receiver1, address receiver2);
-  event LogWithdraw(address requester);
+  event LogSplit(address indexed from, uint value, address indexed receiver1, address indexed receiver2);
+  event LogWithdraw(address indexed requester);
 
-  function split(address payable receiver1, address payable receiver2) public payable whenNotPaused {
+  function split(address receiver1, address receiver2) public payable whenNotPaused {
     require(msg.value > 0, 'A given value should be bigger than 0');
     require(receiver1 != address(0) && receiver2 != address(0), 'A receiver should not be 0x');
     require(msg.sender != receiver1 && msg.sender != receiver2, 'A sender should not be one of receivers');
 
-    uint mod = msg.value % 2;
-    uint value = msg.value / 2;
-    require(accounts[receiver1] + value >= value && accounts[receiver2] + value >= value, 'A value is too big');
-    accounts[msg.sender] += mod;
-    accounts[receiver1] += value;
-    accounts[receiver2] += value;
+    uint value = msg.value.div(2);
+    accounts[msg.sender] = accounts[msg.sender].add(msg.value.mod(2));
+    accounts[receiver1] = accounts[receiver1].add(value);
+    accounts[receiver2] = accounts[receiver2].add(value);
 
     emit LogSplit(msg.sender, msg.value, receiver1, receiver2);
   }
 
   function withdraw() public whenNotPaused {
-    require(accounts[msg.sender] > 0, 'A requested account should have balance');
+    uint value = accounts[msg.sender];
+    require(value > 0, 'A requested account should have balance');
 
-    msg.sender.transfer(accounts[msg.sender]);
     accounts[msg.sender] = 0;
+    msg.sender.transfer(value);
 
     emit LogWithdraw(msg.sender);
   }
